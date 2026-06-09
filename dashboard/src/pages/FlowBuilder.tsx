@@ -357,8 +357,9 @@ function BuilderInner() {
   return (
     <div className="flow-builder">
       <div className="fb-topbar">
-        <button className="btn-secondary" onClick={() => navigate('/messaging-flow')}>
-          <ArrowLeft size={16} /> {t('common.back')}
+        <button className="btn-secondary fb-back" onClick={() => navigate('/messaging-flow')}>
+          <ArrowLeft size={16} />
+          <span>{t('common.back')}</span>
         </button>
         <span className="fb-title">{name.trim() || t('messagingFlow.builder.newFlow')}</span>
         <div className="fb-topbar-right">

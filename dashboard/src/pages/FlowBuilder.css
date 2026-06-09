@@ -18,6 +18,18 @@
   flex-shrink: 0;
 }
 
+.fb-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.fb-back svg {
+  display: block;
+}
+
 .fb-title {
   flex: 1;
   font-size: 1rem;

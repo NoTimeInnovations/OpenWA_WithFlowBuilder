@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { NavLink, Outlet } from 'react-router-dom';
+import { useState, useEffect, useRef } from 'react';
+import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   LayoutDashboard,
@@ -66,6 +66,23 @@ export function Layout({ onLogout, userRole }: LayoutProps) {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  // Collapse the sidebar while the flow builder is open (more canvas room);
+  // restore the previous state when leaving it.
+  const location = useLocation();
+  const prevCollapsed = useRef<boolean | null>(null);
+  useEffect(() => {
+    const inBuilder = location.pathname.includes('/builder');
+    if (inBuilder) {
+      if (prevCollapsed.current === null) prevCollapsed.current = isCollapsed;
+      setIsCollapsed(true);
+      setIsMobileOpen(false);
+    } else if (prevCollapsed.current !== null) {
+      setIsCollapsed(prevCollapsed.current);
+      prevCollapsed.current = null;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname]);
 
   const handleNavClick = () => {
     if (isMobile) setIsMobileOpen(false);
