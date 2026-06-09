@@ -5,7 +5,6 @@ import {
   ReactFlow,
   ReactFlowProvider,
   Background,
-  Controls,
   Handle,
   Position,
   MarkerType,
@@ -35,6 +34,7 @@ import {
   Plus,
   Trash2,
   Loader2,
+  X,
 } from 'lucide-react';
 import {
   flowApi,
@@ -213,6 +213,7 @@ function BuilderInner() {
   const [loading, setLoading] = useState(!isNew);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showSave, setShowSave] = useState(false);
   const loadedRef = useRef(false);
 
   // Load existing flow, or seed a new canvas with a trigger node.
@@ -223,7 +224,6 @@ function BuilderInner() {
       setNodes([
         { id: 'trigger', type: 'trigger', position: { x: 140, y: 220 }, data: { matchType: 'any', keywords: [] } },
       ]);
-      setName('New flow');
       return;
     }
     if (!id) return;
@@ -252,8 +252,7 @@ function BuilderInner() {
   }, [id, isNew, setNodes, setEdges]);
 
   const onConnect = useCallback(
-    (params: Connection) =>
-      setEdges(eds => addEdge({ ...params, markerEnd: { type: MarkerType.ArrowClosed } }, eds)),
+    (params: Connection) => setEdges(eds => addEdge({ ...params, markerEnd: { type: MarkerType.ArrowClosed } }, eds)),
     [setEdges],
   );
 
@@ -276,9 +275,7 @@ function BuilderInner() {
 
   const removeEdgesForHandles = useCallback(
     (nodeId: string, keepHandles: string[]) => {
-      setEdges(eds =>
-        eds.filter(e => !(e.source === nodeId && e.sourceHandle && !keepHandles.includes(e.sourceHandle))),
-      );
+      setEdges(eds => eds.filter(e => !(e.source === nodeId && e.sourceHandle && !keepHandles.includes(e.sourceHandle))));
     },
     [setEdges],
   );
@@ -294,30 +291,36 @@ function BuilderInner() {
 
   const selectedNode = useMemo(() => nodes.find(n => n.id === selectedId) ?? null, [nodes, selectedId]);
 
-  const handleSave = async () => {
+  const buildGraph = (): FlowGraph => ({
+    nodes: nodes.map(n => ({
+      id: n.id,
+      type: (n.type ?? 'send_text') as FlowGraph['nodes'][number]['type'],
+      position: n.position,
+      data: n.data as Record<string, unknown>,
+    })),
+    edges: edges.map(e => ({
+      id: e.id,
+      source: e.source,
+      target: e.target,
+      sourceHandle: e.sourceHandle ?? null,
+      targetHandle: e.targetHandle ?? null,
+      label: typeof e.label === 'string' ? e.label : undefined,
+    })),
+  });
+
+  // Save button → validate the graph, then open the save dialog (name + run-on).
+  const onSaveClick = () => {
     setError(null);
-    const graph: FlowGraph = {
-      nodes: nodes.map(n => ({
-        id: n.id,
-        type: (n.type ?? 'send_text') as FlowGraph['nodes'][number]['type'],
-        position: n.position,
-        data: n.data as Record<string, unknown>,
-      })),
-      edges: edges.map(e => ({
-        id: e.id,
-        source: e.source,
-        target: e.target,
-        sourceHandle: e.sourceHandle ?? null,
-        targetHandle: e.targetHandle ?? null,
-        label: typeof e.label === 'string' ? e.label : undefined,
-      })),
-    };
-    if (!name.trim()) {
-      setError(t('messagingFlow.builder.errNoName'));
+    if (!nodes.some(n => n.type === 'trigger')) {
+      setError(t('messagingFlow.builder.errNoTrigger'));
       return;
     }
-    if (!graph.nodes.some(n => n.type === 'trigger')) {
-      setError(t('messagingFlow.builder.errNoTrigger'));
+    setShowSave(true);
+  };
+
+  const onConfirmSave = async () => {
+    if (!name.trim()) {
+      setError(t('messagingFlow.builder.errNoName'));
       return;
     }
     if (scope.type !== 'all' && (!scope.sessionIds || scope.sessionIds.length === 0)) {
@@ -327,16 +330,14 @@ function BuilderInner() {
     const payload: SaveFlowPayload = {
       name: name.trim(),
       scope,
-      graph,
+      graph: buildGraph(),
       escapeKeyword: escapeKeyword.trim() || undefined,
     };
     setSaving(true);
+    setError(null);
     try {
-      if (isNew) {
-        await flowApi.create(payload);
-      } else if (id) {
-        await flowApi.update(id, payload);
-      }
+      if (isNew) await flowApi.create(payload);
+      else if (id) await flowApi.update(id, payload);
       navigate('/messaging-flow');
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -359,17 +360,12 @@ function BuilderInner() {
         <button className="btn-secondary" onClick={() => navigate('/messaging-flow')}>
           <ArrowLeft size={16} /> {t('common.back')}
         </button>
-        <input
-          className="fb-name-input"
-          value={name}
-          onChange={e => setName(e.target.value)}
-          placeholder={t('messagingFlow.form.namePlaceholder')}
-        />
+        <span className="fb-title">{name.trim() || t('messagingFlow.builder.newFlow')}</span>
         <div className="fb-topbar-right">
-          {error && <span className="fb-error">{error}</span>}
+          {error && !showSave && <span className="fb-error">{error}</span>}
           {canWrite && (
-            <button className="btn-primary" onClick={handleSave} disabled={saving}>
-              {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+            <button className="btn-primary" onClick={onSaveClick}>
+              <Save size={16} />
               {t('common.save')}
             </button>
           )}
@@ -407,7 +403,6 @@ function BuilderInner() {
             defaultEdgeOptions={{ markerEnd: { type: MarkerType.ArrowClosed } }}
           >
             <Background gap={18} />
-            <Controls />
           </ReactFlow>
         </div>
 
@@ -422,17 +417,134 @@ function BuilderInner() {
               readOnly={!canWrite}
             />
           ) : (
-            <FlowSettings
-              name={name}
-              setName={setName}
-              scope={scope}
-              setScope={setScope}
-              escapeKeyword={escapeKeyword}
-              setEscapeKeyword={setEscapeKeyword}
-              sessions={sessions}
-              readOnly={!canWrite}
-            />
+            <div className="fb-inspector-inner">
+              <div className="fb-inspector-head">
+                <span>{t('messagingFlow.builder.inspector')}</span>
+              </div>
+              <p className="fb-hint">{t('messagingFlow.builder.settingsHint')}</p>
+            </div>
           )}
+        </div>
+      </div>
+
+      {showSave && (
+        <SaveFlowDialog
+          name={name}
+          setName={setName}
+          scope={scope}
+          setScope={setScope}
+          escapeKeyword={escapeKeyword}
+          setEscapeKeyword={setEscapeKeyword}
+          sessions={sessions}
+          saving={saving}
+          error={error}
+          onCancel={() => {
+            setShowSave(false);
+            setError(null);
+          }}
+          onConfirm={onConfirmSave}
+        />
+      )}
+    </div>
+  );
+}
+
+// ── Save dialog (name + run-on) ───────────────────────────────────────
+interface SaveFlowDialogProps {
+  name: string;
+  setName: (s: string) => void;
+  scope: FlowScope;
+  setScope: (s: FlowScope) => void;
+  escapeKeyword: string;
+  setEscapeKeyword: (s: string) => void;
+  sessions: { id: string; name: string }[];
+  saving: boolean;
+  error: string | null;
+  onCancel: () => void;
+  onConfirm: () => void;
+}
+
+function SaveFlowDialog({
+  name,
+  setName,
+  scope,
+  setScope,
+  escapeKeyword,
+  setEscapeKeyword,
+  sessions,
+  saving,
+  error,
+  onCancel,
+  onConfirm,
+}: SaveFlowDialogProps) {
+  const { t } = useTranslation();
+  const toggleSession = (sid: string) => {
+    const ids = scope.sessionIds ?? [];
+    setScope({ ...scope, sessionIds: ids.includes(sid) ? ids.filter(s => s !== sid) : [...ids, sid] });
+  };
+  const valid = name.trim() !== '' && (scope.type === 'all' || (scope.sessionIds?.length ?? 0) > 0);
+
+  return (
+    <div className="modal-overlay" onClick={onCancel}>
+      <div className="modal" onClick={e => e.stopPropagation()}>
+        <div className="modal-header">
+          <h2>{t('messagingFlow.builder.saveTitle')}</h2>
+          <button className="btn-icon" onClick={onCancel}>
+            <X size={20} />
+          </button>
+        </div>
+        <div className="modal-body">
+          <label>{t('messagingFlow.form.name')}</label>
+          <input
+            type="text"
+            autoFocus
+            placeholder={t('messagingFlow.form.namePlaceholder')}
+            value={name}
+            onChange={e => setName(e.target.value)}
+          />
+
+          <label>{t('messagingFlow.form.scope')}</label>
+          <select
+            value={scope.type}
+            onChange={e => setScope({ type: e.target.value as FlowScopeType, sessionIds: scope.sessionIds })}
+          >
+            <option value="all">{t('messagingFlow.scope.all')}</option>
+            <option value="sessions">{t('messagingFlow.scope.selected')}</option>
+          </select>
+          {scope.type === 'sessions' && (
+            <div className="session-checkboxes">
+              {sessions.length === 0 && <span className="muted">{t('messagingFlow.form.noSessions')}</span>}
+              {sessions.map(s => (
+                <label key={s.id} className="checkbox-row">
+                  <input
+                    type="checkbox"
+                    checked={(scope.sessionIds ?? []).includes(s.id)}
+                    onChange={() => toggleSession(s.id)}
+                  />
+                  <span>{s.name}</span>
+                </label>
+              ))}
+            </div>
+          )}
+
+          <label>{t('messagingFlow.form.escapeKeyword')}</label>
+          <input
+            type="text"
+            placeholder={t('messagingFlow.form.escapePlaceholder')}
+            value={escapeKeyword}
+            onChange={e => setEscapeKeyword(e.target.value)}
+          />
+
+          {error && <p className="fb-error" style={{ marginTop: '0.75rem' }}>{error}</p>}
+        </div>
+        <div className="modal-footer">
+          <button className="btn-secondary" onClick={onCancel}>
+            {t('common.cancel')}
+          </button>
+          <button className="btn-primary" onClick={onConfirm} disabled={!valid || saving}>
+            {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+            {t('common.save')}
+          </button>
         </div>
       </div>
     </div>
@@ -508,9 +620,7 @@ function NodeInspector({ node, nodes, onChange, onSyncBranches, onDelete, readOn
           </>
         )}
 
-        {node.type === 'buttons' && (
-          <ButtonsEditor node={node} onChange={onChange} onSyncBranches={onSyncBranches} />
-        )}
+        {node.type === 'buttons' && <ButtonsEditor node={node} onChange={onChange} onSyncBranches={onSyncBranches} />}
 
         {node.type === 'wait_for_reply' && (
           <>
@@ -527,9 +637,7 @@ function NodeInspector({ node, nodes, onChange, onSyncBranches, onDelete, readOn
           </>
         )}
 
-        {node.type === 'condition' && (
-          <ConditionEditor node={node} onChange={onChange} onSyncBranches={onSyncBranches} />
-        )}
+        {node.type === 'condition' && <ConditionEditor node={node} onChange={onChange} onSyncBranches={onSyncBranches} />}
 
         {node.type === 'delay' && (
           <>
@@ -666,70 +774,6 @@ function ConditionEditor({
       </button>
       <p className="fb-hint">{t('messagingFlow.builder.elseHint')}</p>
     </>
-  );
-}
-
-// ── Flow settings (right panel when nothing selected) ─────────────────
-interface FlowSettingsProps {
-  name: string;
-  setName: (s: string) => void;
-  scope: FlowScope;
-  setScope: (s: FlowScope) => void;
-  escapeKeyword: string;
-  setEscapeKeyword: (s: string) => void;
-  sessions: { id: string; name: string }[];
-  readOnly: boolean;
-}
-
-function FlowSettings({ name, setName, scope, setScope, escapeKeyword, setEscapeKeyword, sessions, readOnly }: FlowSettingsProps) {
-  const { t } = useTranslation();
-  const toggleSession = (sid: string) => {
-    const ids = scope.sessionIds ?? [];
-    setScope({ ...scope, sessionIds: ids.includes(sid) ? ids.filter(s => s !== sid) : [...ids, sid] });
-  };
-  return (
-    <div className="fb-inspector-inner">
-      <div className="fb-inspector-head">
-        <span>{t('messagingFlow.builder.flowSettings')}</span>
-      </div>
-      <fieldset disabled={readOnly} className="fb-fields">
-        <label>{t('messagingFlow.form.name')}</label>
-        <input value={name} onChange={e => setName(e.target.value)} />
-        <label>{t('messagingFlow.form.scope')}</label>
-        <select value={scope.type} onChange={e => setScope({ type: e.target.value as FlowScopeType, sessionIds: scope.sessionIds })}>
-          <option value="all">{t('messagingFlow.scope.all')}</option>
-          <option value="session">{t('messagingFlow.scope.specific')}</option>
-          <option value="sessions">{t('messagingFlow.scope.selected')}</option>
-        </select>
-        {scope.type === 'session' && (
-          <select
-            value={scope.sessionIds?.[0] ?? ''}
-            onChange={e => setScope({ ...scope, sessionIds: e.target.value ? [e.target.value] : [] })}
-          >
-            <option value="">{t('messagingFlow.form.selectSession')}</option>
-            {sessions.map(s => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-              </option>
-            ))}
-          </select>
-        )}
-        {scope.type === 'sessions' && (
-          <div className="session-checkboxes">
-            {sessions.length === 0 && <span className="muted">{t('messagingFlow.form.noSessions')}</span>}
-            {sessions.map(s => (
-              <label key={s.id} className="checkbox-row">
-                <input type="checkbox" checked={(scope.sessionIds ?? []).includes(s.id)} onChange={() => toggleSession(s.id)} />
-                <span>{s.name}</span>
-              </label>
-            ))}
-          </div>
-        )}
-        <label>{t('messagingFlow.form.escapeKeyword')}</label>
-        <input value={escapeKeyword} onChange={e => setEscapeKeyword(e.target.value)} placeholder={t('messagingFlow.form.escapePlaceholder')} />
-        <p className="fb-hint">{t('messagingFlow.builder.settingsHint')}</p>
-      </fieldset>
-    </div>
   );
 }
 

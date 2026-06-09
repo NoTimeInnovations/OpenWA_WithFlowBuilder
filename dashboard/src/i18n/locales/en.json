@@ -614,7 +614,10 @@
       "settingsHint": "Select a node to edit it, or drag from a node’s handle to connect steps.",
       "errNoName": "Please enter a flow name.",
       "errNoTrigger": "The flow needs a trigger node.",
-      "errNoSession": "Select at least one session for this scope."
+      "errNoSession": "Select at least one session for this scope.",
+      "newFlow": "New flow",
+      "saveTitle": "Save flow",
+      "inspector": "Properties"
     }
   }
 }
