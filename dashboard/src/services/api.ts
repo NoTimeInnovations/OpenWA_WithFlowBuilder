@@ -341,6 +341,127 @@ export const settingsApi = {
 };
 
 // =============================================================================
+// Messaging Flow Types
+// =============================================================================
+
+export type FlowNodeType =
+  | 'trigger'
+  | 'send_text'
+  | 'send_image'
+  | 'send_audio'
+  | 'buttons'
+  | 'wait_for_reply'
+  | 'condition'
+  | 'delay'
+  | 'set_variable'
+  | 'jump'
+  | 'end';
+
+export interface FlowNode {
+  id: string;
+  type: FlowNodeType;
+  position: { x: number; y: number };
+  data: Record<string, unknown>;
+}
+
+export interface FlowEdge {
+  id: string;
+  source: string;
+  target: string;
+  sourceHandle?: string | null;
+  targetHandle?: string | null;
+  label?: string;
+}
+
+export interface FlowGraph {
+  nodes: FlowNode[];
+  edges: FlowEdge[];
+  viewport?: { x: number; y: number; zoom: number };
+}
+
+export type FlowScopeType = 'session' | 'sessions' | 'all';
+export interface FlowScope {
+  type: FlowScopeType;
+  sessionIds?: string[];
+}
+
+export type TriggerMatchType = 'exact' | 'contains' | 'welcome' | 'any' | 'default';
+export interface TriggerDef {
+  matchType: TriggerMatchType;
+  keywords?: string[];
+  priority: number;
+}
+
+export interface Flow {
+  id: string;
+  name: string;
+  description?: string | null;
+  enabled: boolean;
+  scope: FlowScope;
+  graph: FlowGraph;
+  triggers: TriggerDef[];
+  escapeKeyword?: string | null;
+  runTtlHours: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface FlowDryRunOutbound {
+  kind: 'text' | 'image' | 'audio';
+  chatId: string;
+  text?: string;
+  media?: string;
+  caption?: string;
+}
+
+export interface FlowDryRunResult {
+  matchedFlow: boolean;
+  flowId?: string;
+  flowName?: string;
+  executedNodes: string[];
+  outbound: FlowDryRunOutbound[];
+  parkedAt?: string | null;
+  status: 'no-match' | 'parked' | 'completed' | 'aborted';
+}
+
+export interface FlowExecutionStateDto {
+  id: string;
+  flowId: string;
+  sessionId: string;
+  chatId: string;
+  currentNodeId: string | null;
+  status: string;
+  variables: Record<string, unknown>;
+  startedAt: string;
+  lastInteractionAt?: string | null;
+}
+
+export interface SaveFlowPayload {
+  name: string;
+  description?: string;
+  enabled?: boolean;
+  scope: FlowScope;
+  graph: FlowGraph;
+  escapeKeyword?: string;
+  runTtlHours?: number;
+}
+
+export const flowApi = {
+  list: () => request<Flow[]>('/flows'),
+  get: (id: string) => request<Flow>(`/flows/${id}`),
+  create: (data: SaveFlowPayload) =>
+    request<Flow>('/flows', { method: 'POST', body: JSON.stringify(data) }),
+  update: (id: string, data: Partial<SaveFlowPayload>) =>
+    request<Flow>(`/flows/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  enable: (id: string) => request<Flow>(`/flows/${id}/enable`, { method: 'PATCH' }),
+  disable: (id: string) => request<Flow>(`/flows/${id}/disable`, { method: 'PATCH' }),
+  delete: (id: string) => request<void>(`/flows/${id}`, { method: 'DELETE' }),
+  test: (id: string, data: { sessionId: string; from: string; body: string }) =>
+    request<FlowDryRunResult>(`/flows/${id}/test`, { method: 'POST', body: JSON.stringify(data) }),
+  listRuns: (id: string) => request<FlowExecutionStateDto[]>(`/flows/${id}/runs`),
+};
+
+// =============================================================================
 // Plugin Types
 // =============================================================================
 

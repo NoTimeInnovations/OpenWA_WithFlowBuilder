@@ -61,7 +61,8 @@
     "messageTester": "בדיקת הודעות",
     "infrastructure": "תשתית",
     "plugins": "תוספים",
-    "logs": "לוגים"
+    "logs": "לוגים",
+    "messagingFlow": "תהליך הודעות"
   },
   "errorBoundary": {
     "title": "משהו השתבש",
@@ -507,6 +508,113 @@
       "savedTitle": "התצורה נשמרה",
       "savedDesc": "נדרש אתחול שרת כדי להחיל את השינויים.",
       "saveFailed": "השמירה נכשלה"
+    }
+  },
+  "messagingFlow": {
+    "title": "תהליך הודעות",
+    "subtitle": "בנה תהליכי מענה אוטומטיים שמופעלים על הודעות נכנסות.",
+    "addFlow": "תהליך חדש",
+    "createTitle": "יצירת תהליך",
+    "editTitle": "עריכת תהליך",
+    "saveChanges": "שמירת שינויים",
+    "deleteTitle": "מחיקת תהליך",
+    "deleteConfirm": "למחוק את \"{{name}}\"? לא ניתן לבטל פעולה זו.",
+    "testTitle": "בדיקה: {{name}}",
+    "columns": {
+      "name": "שם",
+      "trigger": "טריגר",
+      "scope": "היקף",
+      "status": "סטטוס",
+      "actions": "פעולות"
+    },
+    "empty": {
+      "title": "אין תהליכים עדיין",
+      "description": "צור תהליך מענה אוטומטי ראשון להודעות נכנסות."
+    },
+    "actions": {
+      "test": "בדיקה",
+      "builder": "פתח עורך חזותי",
+      "enable": "הפעל",
+      "disable": "השבת"
+    },
+    "triggerSummary": {
+      "none": "—",
+      "exact": "מדויק: {{keywords}}",
+      "contains": "מכיל: {{keywords}}",
+      "welcome": "פנייה ראשונה",
+      "default": "מענה ברירת מחדל",
+      "any": "כל הודעה"
+    },
+    "scope": {
+      "all": "כל הסשנים",
+      "specific": "סשן מסוים",
+      "selected": "סשנים נבחרים",
+      "count": "{{count}} סשנים"
+    },
+    "triggerType": {
+      "any": "כל הודעה",
+      "exact": "התאמת מילת מפתח מדויקת",
+      "contains": "מכיל מילת מפתח",
+      "welcome": "פנייה ראשונה"
+    },
+    "replyKind": {
+      "text": "טקסט",
+      "image": "תמונה",
+      "audio": "אודיו"
+    },
+    "runStatus": {
+      "completed": "הושלם",
+      "parked": "ממתין לתגובה",
+      "aborted": "בוטל",
+      "expired": "פג",
+      "active": "פעיל",
+      "no-match": "אין התאמה"
+    },
+    "test": {
+      "noMatch": "הודעה זו לא תפעיל את התהליך.",
+      "preview": "איש הקשר יקבל:",
+      "noOutbound": "לא יישלחו הודעות."
+    },
+    "form": {
+      "name": "שם התהליך",
+      "namePlaceholder": "לדוגמה: בוט קבלה",
+      "scope": "פועל על",
+      "selectSession": "בחר סשן…",
+      "noSessions": "אין סשנים זמינים",
+      "trigger": "הפעל כאשר",
+      "keywords": "מילות מפתח",
+      "keywordsPlaceholder": "היי, שלום (מופרד בפסיקים)",
+      "reply": "השב עם",
+      "replyTextPlaceholder": "כתוב את הודעת המענה…",
+      "mediaUrlPlaceholder": "https://… כתובת מדיה",
+      "captionPlaceholder": "כיתוב (אופציונלי)",
+      "escapeKeyword": "מילת עצירה (אופציונלי)",
+      "escapePlaceholder": "לדוגמה: stop",
+      "builderHint": "טיפ: השתמש בעורך החזותי לתהליכים מרובי שלבים עם כפתורים, תנאים ותגובות."
+    },
+    "builder": {
+      "title": "עורך תהליכים",
+      "placeholder": "עורך חזותי לתהליך {{id}} — בקרוב.",
+      "addNode": "הוסף צומת",
+      "variableName": "שמור תגובה למשתנה",
+      "validation": "אימות",
+      "retryText": "הודעת ניסיון חוזר (בקלט שגוי)",
+      "seconds": "שניות",
+      "varName": "שם משתנה",
+      "varValue": "ערך",
+      "jumpTarget": "קפוץ לצומת",
+      "endHint": "מסיים את התהליך ומנקה את מצב איש הקשר.",
+      "menuText": "טקסט התפריט",
+      "choices": "בחירות (כל אחת הופכת להסתעפות)",
+      "addChoice": "הוסף בחירה",
+      "rules": "כללים (ההתאמה הראשונה זוכה)",
+      "addRule": "הוסף כלל",
+      "elseHint": "הסתעפות ה-else נבחרת כשאף כלל לא תואם.",
+      "flowSettings": "הגדרות תהליך",
+      "settingsHint": "בחר צומת לעריכה, או גרור מנקודת החיבור של צומת כדי לחבר שלבים.",
+      "errNoName": "יש להזין שם לתהליך.",
+      "errNoTrigger": "התהליך זקוק לצומת טריגר.",
+      "errNoSession": "בחר לפחות סשן אחד עבור היקף זה."
     }
   }
 }

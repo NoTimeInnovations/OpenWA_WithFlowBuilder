@@ -158,6 +158,13 @@ export class AuthService implements OnModuleInit {
   }
 
   async validateApiKey(rawKey: string, clientIp?: string, sessionId?: string): Promise<ApiKey> {
+    // Master key: if API_MASTER_KEY is set and matches, grant admin access
+    // without requiring a database-backed key. Useful for bootstrapping/dev.
+    const masterKey = process.env.API_MASTER_KEY;
+    if (masterKey && rawKey === masterKey) {
+      return this.buildMasterApiKey();
+    }
+
     const keyHash = this.hashKey(rawKey);
     const apiKey = await this.apiKeyRepository.findOne({ where: { keyHash } });
 
@@ -201,6 +208,23 @@ export class AuthService implements OnModuleInit {
 
   private hashKey(rawKey: string): string {
     return createHash('sha256').update(rawKey).digest('hex');
+  }
+
+  private buildMasterApiKey(): ApiKey {
+    // Synthetic, non-persisted admin key representing the env-configured master key.
+    const apiKey = new ApiKey();
+    apiKey.id = 'master';
+    apiKey.name = 'Master Key (env)';
+    apiKey.keyHash = '';
+    apiKey.keyPrefix = 'master';
+    apiKey.role = ApiKeyRole.ADMIN;
+    apiKey.allowedIps = null;
+    apiKey.allowedSessions = null;
+    apiKey.isActive = true;
+    apiKey.expiresAt = null;
+    apiKey.lastUsedAt = new Date();
+    apiKey.usageCount = 0;
+    return apiKey;
   }
 
   private isIpAllowed(clientIp: string, allowedIps: string[]): boolean {

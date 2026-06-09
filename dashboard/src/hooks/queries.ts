@@ -6,7 +6,9 @@ import {
   auditApi,
   infraApi,
   pluginsApi,
+  flowApi,
   type Webhook,
+  type SaveFlowPayload,
 } from '../services/api';
 
 // ── Query Keys ────────────────────────────────────────────────────────
@@ -23,6 +25,8 @@ export const queryKeys = {
   plugins: ['plugins'] as const,
   engines: ['engines'] as const,
   currentEngine: ['engines', 'current'] as const,
+  flows: ['flows'] as const,
+  flow: (id: string) => ['flows', id] as const,
 };
 
 // ── Session Queries ───────────────────────────────────────────────────
@@ -226,5 +230,66 @@ export function useCurrentEngineQuery() {
     queryKey: queryKeys.currentEngine,
     queryFn: pluginsApi.getCurrentEngine,
     staleTime: 60_000,
+  });
+}
+
+// ── Messaging Flow Queries ────────────────────────────────────────────
+
+export function useFlowsQuery() {
+  return useQuery({
+    queryKey: queryKeys.flows,
+    queryFn: flowApi.list,
+    staleTime: 30_000,
+  });
+}
+
+export function useFlowQuery(id: string, enabled: boolean) {
+  return useQuery({
+    queryKey: queryKeys.flow(id),
+    queryFn: () => flowApi.get(id),
+    enabled: enabled && !!id,
+    staleTime: 30_000,
+  });
+}
+
+export function useCreateFlowMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: SaveFlowPayload) => flowApi.create(data),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.flows });
+    },
+  });
+}
+
+export function useUpdateFlowMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (params: { id: string; data: Partial<SaveFlowPayload> }) => flowApi.update(params.id, params.data),
+    onSuccess: (_data, params) => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.flows });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.flow(params.id) });
+    },
+  });
+}
+
+export function useSetFlowEnabledMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (params: { id: string; enabled: boolean }) =>
+      params.enabled ? flowApi.enable(params.id) : flowApi.disable(params.id),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.flows });
+    },
+  });
+}
+
+export function useDeleteFlowMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => flowApi.delete(id),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.flows });
+    },
   });
 }

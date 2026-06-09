@@ -61,7 +61,8 @@
     "messageTester": "Message Tester",
     "infrastructure": "Infrastructure",
     "plugins": "Plugins",
-    "logs": "Logs"
+    "logs": "Logs",
+    "messagingFlow": "Messaging Flow"
   },
   "errorBoundary": {
     "title": "Something went wrong",
@@ -507,6 +508,113 @@
       "savedTitle": "Configuration Saved",
       "savedDesc": "Server restart required to apply changes.",
       "saveFailed": "Save Failed"
+    }
+  },
+  "messagingFlow": {
+    "title": "Messaging Flow",
+    "subtitle": "Build automated reply flows that trigger on incoming messages.",
+    "addFlow": "New Flow",
+    "createTitle": "Create Flow",
+    "editTitle": "Edit Flow",
+    "saveChanges": "Save Changes",
+    "deleteTitle": "Delete Flow",
+    "deleteConfirm": "Are you sure you want to delete \"{{name}}\"? This cannot be undone.",
+    "testTitle": "Test: {{name}}",
+    "columns": {
+      "name": "Name",
+      "trigger": "Trigger",
+      "scope": "Scope",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "empty": {
+      "title": "No flows yet",
+      "description": "Create your first automated messaging flow to reply to incoming messages."
+    },
+    "actions": {
+      "test": "Test (dry run)",
+      "builder": "Open visual builder",
+      "enable": "Enable",
+      "disable": "Disable"
+    },
+    "triggerSummary": {
+      "none": "—",
+      "exact": "Exact: {{keywords}}",
+      "contains": "Contains: {{keywords}}",
+      "welcome": "First contact",
+      "default": "Default reply",
+      "any": "Any message"
+    },
+    "scope": {
+      "all": "All sessions",
+      "specific": "Specific session",
+      "selected": "Selected sessions",
+      "count": "{{count}} sessions"
+    },
+    "triggerType": {
+      "any": "Any message",
+      "exact": "Exact keyword match",
+      "contains": "Contains keyword",
+      "welcome": "Welcome / first contact"
+    },
+    "replyKind": {
+      "text": "Text",
+      "image": "Image",
+      "audio": "Audio"
+    },
+    "runStatus": {
+      "completed": "Completed",
+      "parked": "Waiting for reply",
+      "aborted": "Aborted",
+      "expired": "Expired",
+      "active": "Active",
+      "no-match": "No match"
+    },
+    "test": {
+      "noMatch": "This message would not trigger the flow.",
+      "preview": "The contact would receive:",
+      "noOutbound": "No messages would be sent."
+    },
+    "form": {
+      "name": "Flow name",
+      "namePlaceholder": "e.g. Welcome bot",
+      "scope": "Runs on",
+      "selectSession": "Select a session…",
+      "noSessions": "No sessions available",
+      "trigger": "Trigger when",
+      "keywords": "Keywords",
+      "keywordsPlaceholder": "hi, hello, hey (comma separated)",
+      "reply": "Reply with",
+      "replyTextPlaceholder": "Type your reply message…",
+      "mediaUrlPlaceholder": "https://… media URL",
+      "captionPlaceholder": "Caption (optional)",
+      "escapeKeyword": "Stop keyword (optional)",
+      "escapePlaceholder": "e.g. stop",
+      "builderHint": "Tip: use the visual builder (pencil icon) for multi-step flows with buttons, conditions and captured replies."
+    },
+    "builder": {
+      "title": "Flow Builder",
+      "placeholder": "Visual builder for flow {{id}} — coming in the next step.",
+      "addNode": "Add node",
+      "variableName": "Save reply to variable",
+      "validation": "Validation",
+      "retryText": "Retry message (on invalid)",
+      "seconds": "Seconds",
+      "varName": "Variable name",
+      "varValue": "Value",
+      "jumpTarget": "Jump to node",
+      "endHint": "Ends the flow and clears the contact’s state.",
+      "menuText": "Menu text",
+      "choices": "Choices (each becomes a branch)",
+      "addChoice": "Add choice",
+      "rules": "Rules (first match wins)",
+      "addRule": "Add rule",
+      "elseHint": "The “else” branch is taken when no rule matches.",
+      "flowSettings": "Flow settings",
+      "settingsHint": "Select a node to edit it, or drag from a node’s handle to connect steps.",
+      "errNoName": "Please enter a flow name.",
+      "errNoTrigger": "The flow needs a trigger node.",
+      "errNoSession": "Select at least one session for this scope."
     }
   }
 }

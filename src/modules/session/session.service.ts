@@ -1,5 +1,7 @@
 import {
   Injectable,
+  Inject,
+  forwardRef,
   NotFoundException,
   ConflictException,
   BadRequestException,
@@ -11,10 +13,11 @@ import { Repository, In, DataSource } from 'typeorm';
 import { Session, SessionStatus } from './entities/session.entity';
 import { CreateSessionDto } from './dto';
 import { EngineFactory } from '../../engine/engine.factory';
-import { IWhatsAppEngine, EngineStatus } from '../../engine/interfaces/whatsapp-engine.interface';
+import { IWhatsAppEngine, EngineStatus, IncomingMessage } from '../../engine/interfaces/whatsapp-engine.interface';
 import { createLogger } from '../../common/services/logger.service';
 import { EventsGateway } from '../events/events.gateway';
 import { WebhookService } from '../webhook/webhook.service';
+import { FlowEngineService } from '../flow/flow-engine.service';
 import { HookManager } from '../../core/hooks';
 
 interface ReconnectState {
@@ -42,6 +45,8 @@ export class SessionService implements OnModuleDestroy, OnModuleInit {
     private readonly engineFactory: EngineFactory,
     private readonly eventsGateway: EventsGateway,
     private readonly webhookService: WebhookService,
+    @Inject(forwardRef(() => FlowEngineService))
+    private readonly flowEngine: FlowEngineService,
     private readonly hookManager: HookManager,
   ) {}
 
@@ -310,6 +315,14 @@ export class SessionService implements OnModuleDestroy, OnModuleInit {
             void this.webhookService.dispatch(id, 'message.received', finalMessage as Record<string, unknown>);
             // Emit real-time event to WebSocket clients
             this.eventsGateway.emitMessage(id, finalMessage as Record<string, unknown>);
+            // Run Messaging Flow automations (fire-and-forget; never breaks webhook/WS delivery)
+            void this.flowEngine
+              .handleInbound(id, finalMessage as IncomingMessage)
+              .catch(err =>
+                this.logger.error('Flow engine error', err instanceof Error ? err.message : String(err), {
+                  sessionId: id,
+                }),
+              );
           });
       },
       onDisconnected: (reason: string): void => {

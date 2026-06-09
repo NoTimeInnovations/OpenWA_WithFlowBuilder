@@ -4,9 +4,14 @@ import { Session } from './entities/session.entity';
 import { SessionService } from './session.service';
 import { SessionController } from './session.controller';
 import { WebhookModule } from '../webhook/webhook.module';
+import { FlowModule } from '../flow/flow.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Session], 'data'), forwardRef(() => WebhookModule)],
+  imports: [
+    TypeOrmModule.forFeature([Session], 'data'),
+    forwardRef(() => WebhookModule),
+    forwardRef(() => FlowModule),
+  ],
   controllers: [SessionController],
   providers: [SessionService],
   exports: [SessionService],
