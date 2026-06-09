@@ -5,8 +5,8 @@ WORKDIR /app
 # Copy package files
 COPY package*.json ./
 
-# Install dependencies
-RUN npm ci
+# Install dependencies (--legacy-peer-deps: Vite 8 vs @vitejs/plugin-react peer range; build is verified to work)
+RUN npm ci --legacy-peer-deps
 
 # Copy source code
 COPY . .
