@@ -72,3 +72,7 @@ uploads/
 docs/plans/
 CLAUDE.md
 _docs/
+
+# Deploy-time secrets (generated on the server, never committed)
+deploy/.env.prod
+*.env.prod
