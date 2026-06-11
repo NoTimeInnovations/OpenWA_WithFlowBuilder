@@ -617,7 +617,8 @@
       "errNoSession": "Select at least one session for this scope.",
       "newFlow": "New flow",
       "saveTitle": "Save flow",
-      "inspector": "Properties"
+      "inspector": "Properties",
+      "fileName": "File name"
     }
   }
 }

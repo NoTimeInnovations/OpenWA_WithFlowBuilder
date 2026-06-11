@@ -17,11 +17,12 @@ import {
 
 /** One outbound message produced by the engine (sent live, or collected in a dry-run). */
 interface OutboundRecord {
-  kind: 'text' | 'image' | 'audio';
+  kind: 'text' | 'image' | 'audio' | 'document';
   chatId: string;
   text?: string;
   media?: string;
   mimetype?: string;
+  filename?: string;
   caption?: string;
 }
 
@@ -315,6 +316,23 @@ export class FlowEngineService {
           nodeId = this.nextTarget(graph, node.id, undefined);
           break;
         }
+        case 'send_document': {
+          const d = node.data as { mediaUrl?: string; mediaBase64?: string; mimetype?: string; filename?: string; caption?: string };
+          await this.dispatch(
+            run.sessionId,
+            {
+              kind: 'document',
+              chatId: run.chatId,
+              media: d.mediaUrl || d.mediaBase64 || '',
+              mimetype: d.mimetype || 'application/octet-stream',
+              filename: d.filename || undefined,
+              caption: d.caption ? this.interpolate(d.caption, run.variables) : undefined,
+            },
+            dry,
+          );
+          nodeId = this.nextTarget(graph, node.id, undefined);
+          break;
+        }
         case 'set_variable': {
           const d = node.data as { name?: string; value?: string };
           if (d.name) run.variables[d.name] = this.interpolate(String(d.value ?? ''), run.variables);
@@ -438,6 +456,13 @@ export class FlowEngineService {
       });
     } else if (rec.kind === 'audio') {
       await engine.sendAudioMessage(rec.chatId, { mimetype: rec.mimetype ?? 'audio/mpeg', data: rec.media ?? '' });
+    } else if (rec.kind === 'document') {
+      await engine.sendDocumentMessage(rec.chatId, {
+        mimetype: rec.mimetype ?? 'application/octet-stream',
+        data: rec.media ?? '',
+        filename: rec.filename,
+        caption: rec.caption,
+      });
     }
   }
 

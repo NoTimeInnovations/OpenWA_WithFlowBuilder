@@ -349,6 +349,7 @@ export type FlowNodeType =
   | 'send_text'
   | 'send_image'
   | 'send_audio'
+  | 'send_document'
   | 'buttons'
   | 'wait_for_reply'
   | 'condition'

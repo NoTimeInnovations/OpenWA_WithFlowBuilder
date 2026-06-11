@@ -24,6 +24,7 @@ import {
   MessageSquare,
   Image as ImageIcon,
   Mic,
+  FileText,
   List,
   HelpCircle,
   GitBranch,
@@ -55,6 +56,7 @@ const NODE_META: Record<string, { label: string; icon: typeof Zap; accent: strin
   send_text: { label: 'Send text', icon: MessageSquare, accent: '#3b82f6' },
   send_image: { label: 'Send image', icon: ImageIcon, accent: '#8b5cf6' },
   send_audio: { label: 'Send audio', icon: Mic, accent: '#8b5cf6' },
+  send_document: { label: 'Send document', icon: FileText, accent: '#0ea5e9' },
   buttons: { label: 'Choices', icon: List, accent: '#f59e0b' },
   wait_for_reply: { label: 'Wait for reply', icon: HelpCircle, accent: '#06b6d4' },
   condition: { label: 'Condition', icon: GitBranch, accent: '#ec4899' },
@@ -68,6 +70,7 @@ const PALETTE: string[] = [
   'send_text',
   'send_image',
   'send_audio',
+  'send_document',
   'buttons',
   'wait_for_reply',
   'condition',
@@ -96,6 +99,8 @@ function defaultData(type: string): Record<string, unknown> {
       return { mediaUrl: '', caption: '' };
     case 'send_audio':
       return { mediaUrl: '' };
+    case 'send_document':
+      return { mediaUrl: '', filename: '', caption: '' };
     case 'buttons':
       return { text: 'Choose an option:', items: [{ id: 'opt1', label: 'Option 1' }] };
     case 'wait_for_reply':
@@ -145,6 +150,8 @@ function nodeSummary(type: string, data: Record<string, unknown>): string {
     case 'send_image':
     case 'send_audio':
       return String(data.mediaUrl ?? '');
+    case 'send_document':
+      return String(data.filename || data.mediaUrl || '');
     case 'buttons':
       return String(data.text ?? '');
     case 'wait_for_reply':
@@ -608,11 +615,17 @@ function NodeInspector({ node, nodes, onChange, onSyncBranches, onDelete, readOn
           </>
         )}
 
-        {(node.type === 'send_image' || node.type === 'send_audio') && (
+        {(node.type === 'send_image' || node.type === 'send_audio' || node.type === 'send_document') && (
           <>
             <label>{t('messagingFlow.form.mediaUrlPlaceholder')}</label>
             <input value={String(d.mediaUrl ?? '')} onChange={e => set({ mediaUrl: e.target.value })} placeholder="https://…" />
-            {node.type === 'send_image' && (
+            {node.type === 'send_document' && (
+              <>
+                <label>{t('messagingFlow.builder.fileName')}</label>
+                <input value={String(d.filename ?? '')} onChange={e => set({ filename: e.target.value })} placeholder="document.pdf" />
+              </>
+            )}
+            {(node.type === 'send_image' || node.type === 'send_document') && (
               <>
                 <label>{t('messagingFlow.form.captionPlaceholder')}</label>
                 <input value={String(d.caption ?? '')} onChange={e => set({ caption: e.target.value })} />

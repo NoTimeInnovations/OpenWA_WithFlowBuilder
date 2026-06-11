@@ -617,7 +617,8 @@
       "errNoSession": "בחר לפחות סשן אחד עבור היקף זה.",
       "newFlow": "תהליך חדש",
       "saveTitle": "שמירת תהליך",
-      "inspector": "מאפיינים"
+      "inspector": "מאפיינים",
+      "fileName": "שם קובץ"
     }
   }
 }
