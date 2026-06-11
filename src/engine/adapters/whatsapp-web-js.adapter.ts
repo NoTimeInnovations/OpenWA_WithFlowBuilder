@@ -2,6 +2,7 @@ import { EventEmitter } from 'events';
 import { Client, LocalAuth, MessageMedia } from 'whatsapp-web.js';
 import * as qrcode from 'qrcode';
 import * as path from 'path';
+import * as fs from 'fs';
 import {
   IWhatsAppEngine,
   EngineStatus,
@@ -100,10 +101,32 @@ export class WhatsAppWebJsAdapter extends EventEmitter implements IWhatsAppEngin
       });
 
       this.setupEventHandlers();
+      // Remove stale Chromium singleton locks left behind by an unclean shutdown
+      // (e.g. the container was killed on redeploy). Without this, Chromium refuses
+      // to launch with "The profile appears to be in use by another Chromium process".
+      this.removeStaleProfileLocks();
       await this.client.initialize();
     } catch (error) {
       this.setStatus(EngineStatus.FAILED);
       throw error;
+    }
+  }
+
+  /**
+   * Delete leftover Chromium singleton lock files in this session's LocalAuth
+   * profile directory so a relaunch after an unclean shutdown isn't blocked.
+   */
+  private removeStaleProfileLocks(): void {
+    const profileDir = path.join(
+      path.resolve(this.config.sessionDataPath),
+      `session-${this.config.sessionId}`,
+    );
+    for (const lock of ['SingletonLock', 'SingletonCookie', 'SingletonSocket']) {
+      try {
+        fs.rmSync(path.join(profileDir, lock), { force: true });
+      } catch {
+        /* best-effort cleanup */
+      }
     }
   }
 

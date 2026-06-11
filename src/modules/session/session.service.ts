@@ -52,7 +52,9 @@ export class SessionService implements OnModuleDestroy, OnModuleInit {
 
   /**
    * On backend startup, reset all active session statuses to disconnected
-   * because the engines are not running yet after restart
+   * (the engines aren't running yet after a restart), then auto-reconnect the
+   * sessions that were connected before — their WhatsApp login persists on disk,
+   * so a redeploy/restart restores them without a QR re-scan.
    */
   async onModuleInit(): Promise<void> {
     const activeStatuses = [
@@ -61,6 +63,9 @@ export class SessionService implements OnModuleDestroy, OnModuleInit {
       SessionStatus.QR_READY,
       SessionStatus.AUTHENTICATING,
     ];
+
+    // Capture sessions that were fully connected (READY) before this restart.
+    const toRestore = await this.sessionRepository.find({ where: { status: SessionStatus.READY } });
 
     const result = await this.sessionRepository.update(
       { status: In(activeStatuses) },
@@ -71,6 +76,29 @@ export class SessionService implements OnModuleDestroy, OnModuleInit {
       this.logger.log(`Reset ${result.affected} session(s) to disconnected on startup`, {
         action: 'startup_reset',
         affected: result.affected,
+      });
+    }
+
+    // Auto-reconnect previously-connected sessions (opt out with SESSION_AUTO_RESTORE=false).
+    // Staggered + delayed so we don't block boot or launch every Chromium at once.
+    if (process.env.SESSION_AUTO_RESTORE !== 'false' && toRestore.length > 0) {
+      toRestore.forEach((session, i) => {
+        setTimeout(
+          () => {
+            this.logger.log(`Auto-restoring session after restart: ${session.name}`, {
+              sessionId: session.id,
+              action: 'auto_restore',
+            });
+            void this.start(session.id).catch(err =>
+              this.logger.error(
+                'Auto-restore failed',
+                err instanceof Error ? err.message : String(err),
+                { sessionId: session.id },
+              ),
+            );
+          },
+          3000 + i * 4000,
+        );
       });
     }
   }

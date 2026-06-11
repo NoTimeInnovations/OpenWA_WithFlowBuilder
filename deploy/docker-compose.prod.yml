@@ -18,6 +18,9 @@ services:
       dockerfile: Dockerfile
     container_name: openwa-api
     restart: unless-stopped
+    # Give the engine time to close Chromium cleanly on redeploy so it removes
+    # its own profile lock (avoids "profile in use" on the next launch).
+    stop_grace_period: 30s
     env_file:
       - .env.prod
     environment:
