@@ -226,7 +226,10 @@ export class FlowEngineService {
     if (node.type === 'wait_for_reply') {
       const data = node.data as { variableName?: string; validation?: CaptureValidation; retryText?: string };
       if (!this.validateCapture(reply, data.validation)) {
-        await this.dispatch(run.sessionId, { kind: 'text', chatId: run.chatId, text: data.retryText || 'Sorry, that does not look right. Please try again.' }, null);
+        // Only re-prompt when the operator set a retry message — no hardcoded default.
+        if (data.retryText && data.retryText.trim()) {
+          await this.dispatch(run.sessionId, { kind: 'text', chatId: run.chatId, text: data.retryText }, null);
+        }
         await this.park(run, node.id, flow);
         return;
       }
