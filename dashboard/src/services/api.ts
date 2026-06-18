@@ -348,6 +348,7 @@ export type FlowNodeType =
   | 'trigger'
   | 'send_text'
   | 'send_image'
+  | 'send_video'
   | 'send_audio'
   | 'send_document'
   | 'buttons'

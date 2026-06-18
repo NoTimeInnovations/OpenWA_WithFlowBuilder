@@ -17,7 +17,7 @@ import {
 
 /** One outbound message produced by the engine (sent live, or collected in a dry-run). */
 interface OutboundRecord {
-  kind: 'text' | 'image' | 'audio' | 'document';
+  kind: 'text' | 'image' | 'video' | 'audio' | 'document';
   chatId: string;
   text?: string;
   media?: string;
@@ -309,6 +309,22 @@ export class FlowEngineService {
           nodeId = this.nextTarget(graph, node.id, undefined);
           break;
         }
+        case 'send_video': {
+          const d = node.data as { mediaUrl?: string; mediaBase64?: string; mimetype?: string; caption?: string };
+          await this.dispatch(
+            run.sessionId,
+            {
+              kind: 'video',
+              chatId: run.chatId,
+              media: d.mediaUrl || d.mediaBase64 || '',
+              mimetype: d.mimetype || 'video/mp4',
+              caption: d.caption ? this.interpolate(d.caption, run.variables) : undefined,
+            },
+            dry,
+          );
+          nodeId = this.nextTarget(graph, node.id, undefined);
+          break;
+        }
         case 'send_audio': {
           const d = node.data as { mediaUrl?: string; mediaBase64?: string; mimetype?: string };
           await this.dispatch(
@@ -454,6 +470,12 @@ export class FlowEngineService {
     } else if (rec.kind === 'image') {
       await engine.sendImageMessage(rec.chatId, {
         mimetype: rec.mimetype ?? 'image/jpeg',
+        data: rec.media ?? '',
+        caption: rec.caption,
+      });
+    } else if (rec.kind === 'video') {
+      await engine.sendVideoMessage(rec.chatId, {
+        mimetype: rec.mimetype ?? 'video/mp4',
         data: rec.media ?? '',
         caption: rec.caption,
       });

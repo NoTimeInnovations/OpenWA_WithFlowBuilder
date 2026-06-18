@@ -23,6 +23,7 @@ import {
   Zap,
   MessageSquare,
   Image as ImageIcon,
+  Video,
   Mic,
   FileText,
   List,
@@ -55,6 +56,7 @@ const NODE_META: Record<string, { label: string; icon: typeof Zap; accent: strin
   trigger: { label: 'Trigger', icon: Zap, accent: '#25d366' },
   send_text: { label: 'Send text', icon: MessageSquare, accent: '#3b82f6' },
   send_image: { label: 'Send image', icon: ImageIcon, accent: '#8b5cf6' },
+  send_video: { label: 'Send video', icon: Video, accent: '#8b5cf6' },
   send_audio: { label: 'Send audio', icon: Mic, accent: '#8b5cf6' },
   send_document: { label: 'Send document', icon: FileText, accent: '#0ea5e9' },
   buttons: { label: 'Choices', icon: List, accent: '#f59e0b' },
@@ -69,6 +71,7 @@ const NODE_META: Record<string, { label: string; icon: typeof Zap; accent: strin
 const PALETTE: string[] = [
   'send_text',
   'send_image',
+  'send_video',
   'send_audio',
   'send_document',
   'buttons',
@@ -96,6 +99,8 @@ function defaultData(type: string): Record<string, unknown> {
     case 'send_text':
       return { text: '' };
     case 'send_image':
+      return { mediaUrl: '', caption: '' };
+    case 'send_video':
       return { mediaUrl: '', caption: '' };
     case 'send_audio':
       return { mediaUrl: '' };
@@ -148,6 +153,7 @@ function nodeSummary(type: string, data: Record<string, unknown>): string {
     case 'send_text':
       return String(data.text ?? '');
     case 'send_image':
+    case 'send_video':
     case 'send_audio':
       return String(data.mediaUrl ?? '');
     case 'send_document':
@@ -615,7 +621,7 @@ function NodeInspector({ node, nodes, onChange, onSyncBranches, onDelete, readOn
           </>
         )}
 
-        {(node.type === 'send_image' || node.type === 'send_audio' || node.type === 'send_document') && (
+        {(node.type === 'send_image' || node.type === 'send_video' || node.type === 'send_audio' || node.type === 'send_document') && (
           <>
             <label>{t('messagingFlow.form.mediaUrlPlaceholder')}</label>
             <input value={String(d.mediaUrl ?? '')} onChange={e => set({ mediaUrl: e.target.value })} placeholder="https://…" />
@@ -625,7 +631,7 @@ function NodeInspector({ node, nodes, onChange, onSyncBranches, onDelete, readOn
                 <input value={String(d.filename ?? '')} onChange={e => set({ filename: e.target.value })} placeholder="document.pdf" />
               </>
             )}
-            {(node.type === 'send_image' || node.type === 'send_document') && (
+            {(node.type === 'send_image' || node.type === 'send_video' || node.type === 'send_document') && (
               <>
                 <label>{t('messagingFlow.form.captionPlaceholder')}</label>
                 <input value={String(d.caption ?? '')} onChange={e => set({ caption: e.target.value })} />
