@@ -44,7 +44,10 @@ export interface DryRunResult {
 }
 
 const MAX_STEPS = 50;
-const MAX_DELAY_MS = 10_000;
+/** Upper bound for a single `delay` node (5 minutes). The run blocks for this
+ *  long, so it's capped to protect the per-chat queue; longer pauses should use
+ *  a scheduled/parked design rather than a blocking wait. */
+const MAX_DELAY_MS = 300_000;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 @Injectable()

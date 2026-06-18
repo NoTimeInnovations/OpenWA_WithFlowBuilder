@@ -665,8 +665,9 @@ function NodeInspector({ node, nodes, onChange, onSyncBranches, onDelete, readOn
             <input
               type="number"
               min={0}
+              max={300}
               value={Number(d.seconds ?? 0)}
-              onChange={e => set({ seconds: Number(e.target.value) })}
+              onChange={e => set({ seconds: Math.max(0, Math.min(300, Number(e.target.value) || 0)) })}
             />
           </>
         )}
