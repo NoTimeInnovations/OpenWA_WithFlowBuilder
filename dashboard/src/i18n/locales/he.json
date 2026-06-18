@@ -181,7 +181,13 @@
       "start": "הפעלה",
       "stop": "עצירה",
       "reconnect": "התחברות מחדש",
-      "delete": "מחיקה"
+      "delete": "מחיקה",
+      "downloadExcel": "הורדת אקסל"
+    },
+    "export": {
+      "successTitle": "ייצוא החל",
+      "successDesc": "קובץ האקסל יורד כעת",
+      "errorTitle": "הייצוא נכשל"
     },
     "toasts": {
       "readyTitle": "ה-Session מוכן",

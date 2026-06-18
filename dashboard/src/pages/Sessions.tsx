@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
-import { Plus, QrCode, RefreshCw, Trash2, Eye, Loader2, Play, Square, X, Search, Filter } from 'lucide-react';
-import { sessionApi, type Session } from '../services/api';
+import { Plus, QrCode, RefreshCw, Trash2, Eye, Loader2, Play, Square, X, Search, Filter, Download } from 'lucide-react';
+import { sessionApi, exportApi, type Session } from '../services/api';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { useToast } from '../components/Toast';
 import { useWebSocket } from '../hooks/useWebSocket';
@@ -25,6 +25,7 @@ export function Sessions() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedSession, setSelectedSession] = useState<Session | null>(null);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [exportingId, setExportingId] = useState<string | null>(null);
 
   useWebSocket({
     onSessionStatus: useCallback(
@@ -144,6 +145,19 @@ export function Sessions() {
       if (err instanceof Error && err.message.includes('already started')) {
         handleShowQR(id);
       }
+    }
+  };
+
+  const handleExport = async (id: string) => {
+    setExportingId(id);
+    try {
+      await exportApi.downloadXlsx(id);
+      toast.success(t('sessions.export.successTitle'), t('sessions.export.successDesc'));
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      toast.error(t('sessions.export.errorTitle'), msg);
+    } finally {
+      setExportingId(null);
     }
   };
 
@@ -477,6 +491,20 @@ export function Sessions() {
                   <Eye size={16} />
                   {t('sessions.actions.view')}
                 </button>
+                {session.status === 'ready' && (
+                  <button
+                    className="btn-action"
+                    onClick={() => handleExport(session.id)}
+                    disabled={exportingId === session.id}
+                  >
+                    {exportingId === session.id ? (
+                      <Loader2 size={16} className="animate-spin" />
+                    ) : (
+                      <Download size={16} />
+                    )}
+                    {t('sessions.actions.downloadExcel')}
+                  </button>
+                )}
                 {canWrite &&
                 (session.status === 'created' || session.status === 'idle' || session.status === 'disconnected') ? (
                   <button className="btn-action" onClick={() => handleStart(session.id)}>

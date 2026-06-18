@@ -11,6 +11,7 @@ import {
   MediaInput,
   IncomingMessage,
   Contact,
+  Chat,
   Group,
   GroupInfo,
   GroupParticipant,
@@ -343,6 +344,22 @@ export class WhatsAppWebJsAdapter extends EventEmitter implements IWhatsAppEngin
       id: msg.id._serialized,
       timestamp: msg.timestamp,
     };
+  }
+
+  async getChats(): Promise<Chat[]> {
+    this.ensureReady();
+    const chats = await this.client!.getChats();
+
+    // Only 1:1 conversations; groups are exposed via getGroups()/getGroupInfo()
+    return chats
+      .filter(chat => !chat.isGroup)
+      .map(chat => ({
+        id: chat.id._serialized,
+        name: chat.name || undefined,
+        number: String(chat.id.user || ''),
+        isGroup: false,
+        unreadCount: chat.unreadCount,
+      }));
   }
 
   async getContacts(): Promise<Contact[]> {

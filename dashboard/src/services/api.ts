@@ -171,6 +171,29 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
   return response.json();
 }
 
+// Fetch a binary endpoint and trigger a browser download.
+async function downloadFile(endpoint: string, fallbackName: string): Promise<void> {
+  const apiKey = sessionStorage.getItem('openwa_api_key');
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    headers: { ...(apiKey ? { 'X-API-Key': apiKey } : {}) },
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ message: response.statusText }));
+    throw new Error(error.message || `HTTP ${response.status}`);
+  }
+
+  const blob = await response.blob();
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = fallbackName;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
 // =============================================================================
 // Session API
 // =============================================================================
@@ -189,6 +212,18 @@ export const sessionApi = {
   getQR: (id: string) => request<{ qrCode: string; status: string }>(`/sessions/${id}/qr`),
   getStats: () => request<SessionStats>('/sessions/stats/overview'),
   getGroups: (id: string) => request<{ id: string; name: string }[]>(`/sessions/${id}/groups`),
+};
+
+// =============================================================================
+// Export API
+// =============================================================================
+
+export const exportApi = {
+  // Download chats, contacts and group members for a session as an .xlsx file
+  downloadXlsx: (id: string) => {
+    const stamp = new Date().toISOString().slice(0, 10);
+    return downloadFile(`/sessions/${id}/export/xlsx`, `whatsapp-export-${stamp}.xlsx`);
+  },
 };
 
 // =============================================================================

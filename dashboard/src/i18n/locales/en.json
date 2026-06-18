@@ -181,7 +181,13 @@
       "start": "Start",
       "stop": "Stop",
       "reconnect": "Reconnect",
-      "delete": "Delete"
+      "delete": "Delete",
+      "downloadExcel": "Download Excel"
+    },
+    "export": {
+      "successTitle": "Export Started",
+      "successDesc": "Your Excel file is downloading",
+      "errorTitle": "Export Failed"
     },
     "toasts": {
       "readyTitle": "Session Ready",

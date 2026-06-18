@@ -60,6 +60,14 @@ export interface Group {
   isAdmin?: boolean;
 }
 
+export interface Chat {
+  id: string;
+  name?: string;
+  number: string;
+  isGroup: boolean;
+  unreadCount?: number;
+}
+
 export interface GroupParticipant {
   id: string;
   number: string;
@@ -235,6 +243,9 @@ export interface IWhatsAppEngine {
   // Reactions (Phase 3)
   reactToMessage(chatId: string, messageId: string, emoji: string): Promise<void>;
   getMessageReactions(chatId: string, messageId: string): Promise<MessageReaction[]>;
+
+  // Chats
+  getChats(): Promise<Chat[]>;
 
   // Contacts
   getContacts(): Promise<Contact[]>;
