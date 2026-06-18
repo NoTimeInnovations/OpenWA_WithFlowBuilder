@@ -350,16 +350,41 @@ export class WhatsAppWebJsAdapter extends EventEmitter implements IWhatsAppEngin
     this.ensureReady();
     const chats = await this.client!.getChats();
 
-    // Only 1:1 conversations; groups are exposed via getGroups()/getGroupInfo()
-    return chats
-      .filter(chat => !chat.isGroup)
-      .map(chat => ({
+    // Only 1:1 conversations; skip groups, status broadcasts and newsletters
+    const oneToOne = chats.filter(
+      chat =>
+        !chat.isGroup &&
+        chat.id.server !== 'broadcast' &&
+        chat.id.server !== 'newsletter',
+    );
+
+    // Newer WhatsApp addresses many chats by "LID" — chat.id.user is then an
+    // internal id, not a phone number. Resolve LID -> real phone number.
+    const ids = oneToOne.map(chat => chat.id._serialized);
+    const phoneById = new Map<string, string>();
+    if (ids.length) {
+      try {
+        const mapping = await this.client!.getContactLidAndPhone(ids);
+        mapping.forEach((m, i) => {
+          if (m?.pn) phoneById.set(ids[i], String(m.pn).split('@')[0]);
+        });
+      } catch (error) {
+        this.logger.warn(`Failed to resolve LID phone numbers: ${String(error)}`);
+      }
+    }
+
+    return oneToOne.map(chat => {
+      const resolved = phoneById.get(chat.id._serialized);
+      // Prefer the resolved phone; fall back to id.user only for real phone ids
+      const number = resolved || (chat.id.server === 'c.us' ? String(chat.id.user || '') : '');
+      return {
         id: chat.id._serialized,
         name: chat.name || undefined,
-        number: String(chat.id.user || ''),
+        number,
         isGroup: false,
         unreadCount: chat.unreadCount,
-      }));
+      };
+    });
   }
 
   async getContacts(): Promise<Contact[]> {

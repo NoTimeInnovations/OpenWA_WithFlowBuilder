@@ -15,6 +15,14 @@ function formatNumber(raw?: string): string {
   return /^\d+$/.test(digits) ? `+${digits}` : digits;
 }
 
+// WhatsApp shows the phone number as the display name for unsaved contacts
+// (e.g. "+1 (234) 567-8900"). Recover the digits from such a name.
+function phoneFromName(name?: string): string {
+  if (!name || !name.trim().startsWith('+')) return '';
+  const digits = name.replace(/\D/g, '');
+  return digits.length >= 7 ? digits : '';
+}
+
 @ApiTags('export')
 @Controller('sessions/:sessionId/export')
 export class ExportController {
@@ -51,11 +59,13 @@ export class ExportController {
 
     // Sheet: Chats (1:1 conversations)
     const chatRows: Row[] = chats
-      .map(ch => ({
-        Name: nameById.get(ch.id) || ch.name || '',
-        Number: formatNumber(ch.number || ch.id),
-        Unread: ch.unreadCount ?? 0,
-      }))
+      .map(ch => {
+        const number = ch.number || phoneFromName(ch.name);
+        return {
+          Name: ch.name || nameById.get(ch.id) || '',
+          Number: number ? formatNumber(number) : '',
+        };
+      })
       .sort((a, b) => String(a.Name).localeCompare(String(b.Name)));
 
     // Sheet: All Contacts (address book)
