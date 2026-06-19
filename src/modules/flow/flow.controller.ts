@@ -61,6 +61,16 @@ export class FlowController {
     return this.flowService.update(id, dto);
   }
 
+  @Post(':id/duplicate')
+  @RequireRole(ApiKeyRole.OPERATOR)
+  @ApiOperation({ summary: 'Duplicate a flow (creates a disabled copy)' })
+  @ApiParam({ name: 'id', description: 'Flow ID to copy' })
+  @ApiResponse({ status: 201, type: FlowResponseDto })
+  @ApiResponse({ status: 404, description: 'Flow not found' })
+  async duplicate(@Param('id') id: string): Promise<Flow> {
+    return this.flowService.duplicate(id);
+  }
+
   @Patch(':id/enable')
   @RequireRole(ApiKeyRole.OPERATOR)
   @ApiOperation({ summary: 'Enable a flow' })

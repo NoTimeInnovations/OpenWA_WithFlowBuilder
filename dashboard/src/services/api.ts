@@ -490,6 +490,7 @@ export const flowApi = {
     request<Flow>('/flows', { method: 'POST', body: JSON.stringify(data) }),
   update: (id: string, data: Partial<SaveFlowPayload>) =>
     request<Flow>(`/flows/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  duplicate: (id: string) => request<Flow>(`/flows/${id}/duplicate`, { method: 'POST' }),
   enable: (id: string) => request<Flow>(`/flows/${id}/enable`, { method: 'PATCH' }),
   disable: (id: string) => request<Flow>(`/flows/${id}/disable`, { method: 'PATCH' }),
   delete: (id: string) => request<void>(`/flows/${id}`, { method: 'DELETE' }),

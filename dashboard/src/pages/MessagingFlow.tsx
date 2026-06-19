@@ -1,11 +1,17 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Plus, Edit, Trash2, Play, Power, Workflow as WorkflowIcon, Loader2, X, Check, AlertTriangle } from 'lucide-react';
+import { Plus, Edit, Copy, Trash2, Play, Power, Workflow as WorkflowIcon, Loader2, X, Check, AlertTriangle } from 'lucide-react';
 import { flowApi, type Flow, type FlowScope, type FlowDryRunResult } from '../services/api';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { useRole } from '../hooks/useRole';
-import { useFlowsQuery, useSessionsQuery, useSetFlowEnabledMutation, useDeleteFlowMutation } from '../hooks/queries';
+import {
+  useFlowsQuery,
+  useSessionsQuery,
+  useSetFlowEnabledMutation,
+  useDeleteFlowMutation,
+  useDuplicateFlowMutation,
+} from '../hooks/queries';
 import { PageHeader } from '../components/PageHeader';
 import './MessagingFlow.css';
 
@@ -19,8 +25,10 @@ export function MessagingFlow() {
   const { data: sessions = [] } = useSessionsQuery();
   const enabledMutation = useSetFlowEnabledMutation();
   const deleteMutation = useDeleteFlowMutation();
+  const duplicateMutation = useDuplicateFlowMutation();
 
   const [deleteTarget, setDeleteTarget] = useState<Flow | null>(null);
+  const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
   const [testResult, setTestResult] = useState<{ flow: Flow; result: FlowDryRunResult } | null>(null);
   const [testingId, setTestingId] = useState<string | null>(null);
   const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
@@ -62,6 +70,18 @@ export function MessagingFlow() {
       await enabledMutation.mutateAsync({ id: flow.id, enabled: !flow.enabled });
     } catch (err) {
       setToast({ type: 'error', message: err instanceof Error ? err.message : t('common.unknownError') });
+    }
+  };
+
+  const handleDuplicate = async (flow: Flow) => {
+    setDuplicatingId(flow.id);
+    try {
+      const copy = await duplicateMutation.mutateAsync(flow.id);
+      setToast({ type: 'success', message: t('messagingFlow.toasts.duplicated', { name: copy.name }) });
+    } catch (err) {
+      setToast({ type: 'error', message: err instanceof Error ? err.message : t('common.unknownError') });
+    } finally {
+      setDuplicatingId(null);
     }
   };
 
@@ -249,6 +269,14 @@ export function MessagingFlow() {
                         onClick={() => navigate(`/messaging-flow/${flow.id}/builder`)}
                       >
                         <Edit size={16} />
+                      </button>
+                      <button
+                        className="icon-btn"
+                        title={t('messagingFlow.actions.duplicate')}
+                        onClick={() => handleDuplicate(flow)}
+                        disabled={duplicatingId === flow.id}
+                      >
+                        {duplicatingId === flow.id ? <Loader2 size={16} className="animate-spin" /> : <Copy size={16} />}
                       </button>
                       <button className="icon-btn danger" title={t('common.delete')} onClick={() => setDeleteTarget(flow)}>
                         <Trash2 size={16} />

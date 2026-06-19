@@ -50,6 +50,37 @@ export class FlowService {
     return saved;
   }
 
+  /**
+   * Duplicate an existing flow into a new, independent copy. The copy is created
+   * **disabled** so it can't fire on the same triggers as the original until the
+   * operator has reviewed and enabled it. The graph and scope are deep-cloned so
+   * the two flows never share mutable references.
+   */
+  async duplicate(id: string): Promise<Flow> {
+    const source = await this.findOne(id);
+    const graph = JSON.parse(JSON.stringify(source.graph ?? { nodes: [], edges: [] })) as FlowGraph;
+    const scope = JSON.parse(JSON.stringify(source.scope ?? { type: 'all' }));
+
+    const copy = this.flowRepo.create({
+      name: `${source.name} (copy)`.slice(0, 255),
+      description: source.description ?? null,
+      enabled: false,
+      scope,
+      graph,
+      triggers: this.extractTriggers(graph),
+      escapeKeyword: source.escapeKeyword ?? null,
+      runTtlHours: source.runTtlHours ?? 24,
+    });
+
+    const saved = await this.flowRepo.save(copy);
+    this.logger.log(`Flow duplicated: ${saved.name}`, {
+      flowId: saved.id,
+      sourceFlowId: source.id,
+      action: 'flow_duplicated',
+    });
+    return saved;
+  }
+
   async update(id: string, dto: UpdateFlowDto): Promise<Flow> {
     const flow = await this.findOne(id);
 

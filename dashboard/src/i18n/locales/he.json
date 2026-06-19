@@ -541,7 +541,11 @@
       "test": "בדיקה",
       "builder": "פתח עורך חזותי",
       "enable": "הפעל",
-      "disable": "השבת"
+      "disable": "השבת",
+      "duplicate": "שכפל"
+    },
+    "toasts": {
+      "duplicated": "שוכפל בשם „{{name}}” (מושבת)"
     },
     "triggerSummary": {
       "none": "—",

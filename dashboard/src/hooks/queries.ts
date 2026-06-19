@@ -273,6 +273,16 @@ export function useUpdateFlowMutation() {
   });
 }
 
+export function useDuplicateFlowMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => flowApi.duplicate(id),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.flows });
+    },
+  });
+}
+
 export function useSetFlowEnabledMutation() {
   const queryClient = useQueryClient();
   return useMutation({

@@ -541,7 +541,11 @@
       "test": "Test (dry run)",
       "builder": "Open visual builder",
       "enable": "Enable",
-      "disable": "Disable"
+      "disable": "Disable",
+      "duplicate": "Duplicate"
+    },
+    "toasts": {
+      "duplicated": "Duplicated as “{{name}}” (disabled)"
     },
     "triggerSummary": {
       "none": "—",
