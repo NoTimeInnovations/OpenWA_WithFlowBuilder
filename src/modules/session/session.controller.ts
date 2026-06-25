@@ -162,7 +162,16 @@ export class SessionController {
   })
   @ApiResponse({ status: 400, description: 'Session not ready' })
   @ApiResponse({ status: 404, description: 'Session not found' })
-  async getGroups(@Param('id') id: string): Promise<{ id: string; name: string }[]> {
+  async getGroups(@Param('id') id: string): Promise<
+    Array<{
+      id: string;
+      name: string;
+      participantsCount?: number;
+      isCommunity?: boolean;
+      isCommunitySubGroup?: boolean;
+      isAnnounce?: boolean;
+    }>
+  > {
     return this.sessionService.getGroups(id);
   }
 

@@ -13,7 +13,7 @@ import {
   Link as LinkIcon,
   Volume2,
 } from 'lucide-react';
-import { type GroupLeaveRule, groupLeaveApi } from '../services/api';
+import { type GroupLeaveRule, type WaGroup, groupLeaveApi } from '../services/api';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { useRole } from '../hooks/useRole';
 import {
@@ -90,6 +90,20 @@ export function GroupLeave() {
   }, [toast]);
 
   const sessionName = (id: string) => sessions.find(s => s.id === id)?.name || id.substring(0, 8);
+
+  // Disambiguate same-named groups: show type (Community vs Group) + member count.
+  const groupLabel = (g: WaGroup): string => {
+    const type = g.isCommunity
+      ? t('groupLeave.form.typeCommunity')
+      : g.isCommunitySubGroup
+        ? t('groupLeave.form.typeCommunityGroup')
+        : t('groupLeave.form.typeGroup');
+    const parts = [type];
+    if (typeof g.participantsCount === 'number') {
+      parts.push(t('groupLeave.form.members', { count: g.participantsCount }));
+    }
+    return `${g.name || g.id} — ${parts.join(' · ')}`;
+  };
 
   const openCreate = () => {
     setForm(emptyForm);
@@ -310,7 +324,7 @@ export function GroupLeave() {
         )}
         {groups.map(g => (
           <option key={g.id} value={g.id}>
-            {g.name || g.id}
+            {groupLabel(g)}
           </option>
         ))}
       </select>

@@ -531,7 +531,16 @@ export class SessionService implements OnModuleDestroy, OnModuleInit {
     return this.engines.get(id);
   }
 
-  async getGroups(id: string): Promise<{ id: string; name: string }[]> {
+  async getGroups(id: string): Promise<
+    Array<{
+      id: string;
+      name: string;
+      participantsCount?: number;
+      isCommunity?: boolean;
+      isCommunitySubGroup?: boolean;
+      isAnnounce?: boolean;
+    }>
+  > {
     await this.findOne(id); // Verify session exists
     const engine = this.engines.get(id);
 
@@ -543,6 +552,10 @@ export class SessionService implements OnModuleDestroy, OnModuleInit {
     return groups.map(g => ({
       id: g.id,
       name: g.name,
+      participantsCount: g.participantsCount,
+      isCommunity: g.isCommunity,
+      isCommunitySubGroup: g.isCommunitySubGroup,
+      isAnnounce: g.isAnnounce,
     }));
   }
 

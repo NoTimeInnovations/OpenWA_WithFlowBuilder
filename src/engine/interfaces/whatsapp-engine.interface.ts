@@ -67,6 +67,12 @@ export interface Group {
   name: string;
   participantsCount?: number;
   isAdmin?: boolean;
+  /** This chat is a Community's parent / announcement group */
+  isCommunity?: boolean;
+  /** This group is linked under a Community (a sub-group) */
+  isCommunitySubGroup?: boolean;
+  /** Announcement-only group (admins post) */
+  isAnnounce?: boolean;
 }
 
 export interface Chat {

@@ -18,6 +18,15 @@ export interface Session {
   updatedAt: string;
 }
 
+export interface WaGroup {
+  id: string;
+  name: string;
+  participantsCount?: number;
+  isCommunity?: boolean; // a Community's parent / announcement group
+  isCommunitySubGroup?: boolean; // a group linked under a Community
+  isAnnounce?: boolean; // announcement-only group
+}
+
 export interface SessionStats {
   total: number;
   active: number;
@@ -211,7 +220,7 @@ export const sessionApi = {
   stop: (id: string) => request<Session>(`/sessions/${id}/stop`, { method: 'POST' }),
   getQR: (id: string) => request<{ qrCode: string; status: string }>(`/sessions/${id}/qr`),
   getStats: () => request<SessionStats>('/sessions/stats/overview'),
-  getGroups: (id: string) => request<{ id: string; name: string }[]>(`/sessions/${id}/groups`),
+  getGroups: (id: string) => request<WaGroup[]>(`/sessions/${id}/groups`),
 };
 
 // =============================================================================

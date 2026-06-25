@@ -119,10 +119,7 @@ export class WhatsAppWebJsAdapter extends EventEmitter implements IWhatsAppEngin
    * profile directory so a relaunch after an unclean shutdown isn't blocked.
    */
   private removeStaleProfileLocks(): void {
-    const profileDir = path.join(
-      path.resolve(this.config.sessionDataPath),
-      `session-${this.config.sessionId}`,
-    );
+    const profileDir = path.join(path.resolve(this.config.sessionDataPath), `session-${this.config.sessionId}`);
     for (const lock of ['SingletonLock', 'SingletonCookie', 'SingletonSocket']) {
       try {
         fs.rmSync(path.join(profileDir, lock), { force: true });
@@ -395,10 +392,7 @@ export class WhatsAppWebJsAdapter extends EventEmitter implements IWhatsAppEngin
 
     // Only 1:1 conversations; skip groups, status broadcasts and newsletters
     const oneToOne = chats.filter(
-      chat =>
-        !chat.isGroup &&
-        chat.id.server !== 'broadcast' &&
-        chat.id.server !== 'newsletter',
+      chat => !chat.isGroup && chat.id.server !== 'broadcast' && chat.id.server !== 'newsletter',
     );
 
     // Newer WhatsApp addresses many chats by "LID" — chat.id.user is then an
@@ -477,6 +471,14 @@ export class WhatsAppWebJsAdapter extends EventEmitter implements IWhatsAppEngin
 
     return groups.map(g => {
       const groupChat = g as unknown as GroupChat;
+      // Community flags live on the raw groupMetadata (not in wwjs' typings):
+      // a Community's parent/announcement group has isParentGroup=true, and a
+      // group linked under a Community has parentGroup set.
+      const meta = (
+        g as unknown as {
+          groupMetadata?: { isParentGroup?: boolean; parentGroup?: unknown; announce?: boolean };
+        }
+      ).groupMetadata;
       return {
         id: g.id._serialized,
         name: g.name,
@@ -484,6 +486,9 @@ export class WhatsAppWebJsAdapter extends EventEmitter implements IWhatsAppEngin
         isAdmin: groupChat.participants?.some(
           p => p.isAdmin && p.id._serialized === this.client?.info?.wid?._serialized,
         ),
+        isCommunity: Boolean(meta?.isParentGroup),
+        isCommunitySubGroup: Boolean(meta?.parentGroup),
+        isAnnounce: Boolean(meta?.announce),
       };
     });
   }
