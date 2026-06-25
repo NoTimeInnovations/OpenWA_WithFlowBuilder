@@ -137,7 +137,10 @@ export class GroupLeaveService {
 
   async handleGroupLeave(sessionId: string, groupId: string, leaverIds: string[]): Promise<void> {
     const rules = await this.ruleRepo.find({ where: { sessionId, groupId, enabled: true } });
-    if (rules.length === 0) return;
+    if (rules.length === 0) {
+      this.logger.log(`group_leave for ${groupId} ignored — no enabled rule for this group`, { sessionId, groupId });
+      return;
+    }
 
     const engine = this.sessionService.getEngine(sessionId);
     if (!engine) {
@@ -149,6 +152,8 @@ export class GroupLeaveService {
     const botPhone = engine.getPhoneNumber();
     const recipients = (leaverIds ?? []).filter(id => !!id && !(botPhone && id.startsWith(`${botPhone}@`)));
     if (recipients.length === 0) return;
+
+    this.logger.log(`Sending group-leave audio to ${recipients.length} leaver(s)`, { sessionId, groupId, recipients });
 
     for (const rule of rules) {
       let media: MediaInput;

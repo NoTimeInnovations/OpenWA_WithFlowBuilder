@@ -337,6 +337,10 @@ export class WhatsAppWebJsAdapter extends EventEmitter implements IWhatsAppEngin
   private async sendMediaMessage(chatId: string, media: MediaInput): Promise<MessageResult> {
     this.ensureReady();
 
+    // Newer WhatsApp addresses users by "LID"; you can't DM a @lid directly,
+    // so resolve it to the real phone JID before sending.
+    const targetId = await this.resolveRecipientId(chatId);
+
     let messageMedia: MessageMedia;
 
     if (typeof media.data === 'string') {
@@ -352,7 +356,7 @@ export class WhatsAppWebJsAdapter extends EventEmitter implements IWhatsAppEngin
       messageMedia = new MessageMedia(media.mimetype, media.data.toString('base64'), media.filename);
     }
 
-    const msg = await this.client!.sendMessage(chatId, messageMedia, {
+    const msg = await this.client!.sendMessage(targetId, messageMedia, {
       caption: media.caption,
       // Send as a WhatsApp voice note (PTT) when requested; ignored for non-audio.
       sendAudioAsVoice: media.asVoice,
@@ -362,6 +366,27 @@ export class WhatsAppWebJsAdapter extends EventEmitter implements IWhatsAppEngin
       id: msg.id._serialized,
       timestamp: msg.timestamp,
     };
+  }
+
+  /**
+   * Resolve a recipient id to a sendable JID. WhatsApp now often reports users
+   * (e.g. group leavers) as a "@lid" which can't be messaged directly, so map it
+   * back to the real phone number. Non-LID ids are returned unchanged.
+   */
+  private async resolveRecipientId(chatId: string): Promise<string> {
+    if (!chatId.endsWith('@lid')) return chatId;
+    try {
+      const mapping = await this.client!.getContactLidAndPhone([chatId]);
+      const pn = mapping?.[0]?.pn;
+      if (pn) {
+        const jid = String(pn);
+        return jid.includes('@') ? jid : `${jid}@c.us`;
+      }
+      this.logger.warn(`Could not resolve LID to a phone number: ${chatId}`);
+    } catch (error) {
+      this.logger.warn(`LID resolution failed for ${chatId}: ${String(error)}`);
+    }
+    return chatId; // best-effort fallback
   }
 
   async getChats(): Promise<Chat[]> {
