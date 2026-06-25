@@ -7,8 +7,10 @@ import {
   infraApi,
   pluginsApi,
   flowApi,
+  groupLeaveApi,
   type Webhook,
   type SaveFlowPayload,
+  type CreateGroupLeaveRulePayload,
 } from '../services/api';
 
 // ── Query Keys ────────────────────────────────────────────────────────
@@ -27,6 +29,7 @@ export const queryKeys = {
   currentEngine: ['engines', 'current'] as const,
   flows: ['flows'] as const,
   flow: (id: string) => ['flows', id] as const,
+  groupLeaveRules: ['group-leave-rules'] as const,
 };
 
 // ── Session Queries ───────────────────────────────────────────────────
@@ -300,6 +303,47 @@ export function useDeleteFlowMutation() {
     mutationFn: (id: string) => flowApi.delete(id),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.flows });
+    },
+  });
+}
+
+// ── Group-Leave Rule Queries ──────────────────────────────────────────
+
+export function useGroupLeaveRulesQuery() {
+  return useQuery({
+    queryKey: queryKeys.groupLeaveRules,
+    queryFn: groupLeaveApi.list,
+    staleTime: 30_000,
+  });
+}
+
+export function useCreateGroupLeaveRuleMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: CreateGroupLeaveRulePayload) => groupLeaveApi.create(data),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.groupLeaveRules });
+    },
+  });
+}
+
+export function useUpdateGroupLeaveRuleMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (params: { id: string; data: Partial<CreateGroupLeaveRulePayload> }) =>
+      groupLeaveApi.update(params.id, params.data),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.groupLeaveRules });
+    },
+  });
+}
+
+export function useDeleteGroupLeaveRuleMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => groupLeaveApi.delete(id),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.groupLeaveRules });
     },
   });
 }

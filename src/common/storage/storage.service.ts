@@ -2,8 +2,6 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as fs from 'fs';
 import * as path from 'path';
-import * as archiver from 'archiver';
-import * as tar from 'tar-stream';
 import { createGunzip } from 'zlib';
 import { Readable, PassThrough } from 'stream';
 import {
@@ -150,6 +148,9 @@ export class StorageService {
   // ============================================================================
 
   async createExportStream(): Promise<PassThrough> {
+    // Loaded lazily: archiver is ESM-only, so a static import would be eagerly
+    // pulled into every module that (transitively) imports StorageService.
+    const archiver = await import('archiver');
     const files = await this.listFiles();
     const output = new PassThrough();
 
@@ -179,6 +180,7 @@ export class StorageService {
   // ============================================================================
 
   async importFromStream(inputStream: Readable): Promise<number> {
+    const tar = await import('tar-stream');
     let importedCount = 0;
 
     const extract = tar.extract();

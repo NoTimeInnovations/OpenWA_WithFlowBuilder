@@ -20,6 +20,7 @@ export interface MediaInput {
   data: Buffer | string; // Buffer or base64 or URL
   filename?: string;
   caption?: string;
+  asVoice?: boolean; // send audio as a WhatsApp voice note (PTT) instead of a file
 }
 
 export interface IncomingMessage {
@@ -51,6 +52,14 @@ export interface Contact {
   isMyContact: boolean;
   isBlocked: boolean;
   profilePicUrl?: string;
+}
+
+/** Emitted when one or more participants leave (or are removed from) a group. */
+export interface GroupLeaveEvent {
+  groupId: string; // group chat id (e.g. "12345@g.us")
+  leaverIds: string[]; // ids of the participants who left / were removed
+  author: string; // id of whoever triggered the change
+  timestamp: number;
 }
 
 export interface Group {
@@ -209,6 +218,7 @@ export interface EngineEventCallbacks {
   onMessageAck?: (messageId: string, ack: number) => void;
   onDisconnected?: (reason: string) => void;
   onStateChanged?: (state: EngineStatus) => void;
+  onGroupLeave?: (event: GroupLeaveEvent) => void;
 }
 
 export interface IWhatsAppEngine {

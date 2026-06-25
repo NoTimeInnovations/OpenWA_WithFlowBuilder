@@ -18,6 +18,7 @@ import { createLogger } from '../../common/services/logger.service';
 import { EventsGateway } from '../events/events.gateway';
 import { WebhookService } from '../webhook/webhook.service';
 import { FlowEngineService } from '../flow/flow-engine.service';
+import { GroupLeaveService } from '../group-leave/group-leave.service';
 import { HookManager } from '../../core/hooks';
 
 interface ReconnectState {
@@ -47,6 +48,8 @@ export class SessionService implements OnModuleDestroy, OnModuleInit {
     private readonly webhookService: WebhookService,
     @Inject(forwardRef(() => FlowEngineService))
     private readonly flowEngine: FlowEngineService,
+    @Inject(forwardRef(() => GroupLeaveService))
+    private readonly groupLeaveService: GroupLeaveService,
     private readonly hookManager: HookManager,
   ) {}
 
@@ -352,6 +355,29 @@ export class SessionService implements OnModuleDestroy, OnModuleInit {
                 }),
               );
           });
+      },
+      onGroupLeave: (event): void => {
+        this.logger.log(`Participant(s) left group ${event.groupId}`, {
+          sessionId: id,
+          groupId: event.groupId,
+          leaverIds: event.leaverIds,
+          action: 'group_leave',
+        });
+
+        // Dispatch to webhooks (the 'group.leave' event type is already supported)
+        void this.webhookService.dispatch(id, 'group.leave', {
+          groupId: event.groupId,
+          leaverIds: event.leaverIds,
+          author: event.author,
+          timestamp: event.timestamp,
+        });
+
+        // Send the configured goodbye audio to whoever left (fire-and-forget)
+        void this.groupLeaveService.handleGroupLeave(id, event.groupId, event.leaverIds).catch(err =>
+          this.logger.error('Group-leave audio handler error', err instanceof Error ? err.message : String(err), {
+            sessionId: id,
+          }),
+        );
       },
       onDisconnected: (reason: string): void => {
         this.logger.warn(`Session disconnected: ${reason}`, {

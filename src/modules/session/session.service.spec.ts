@@ -7,6 +7,8 @@ import { Session, SessionStatus } from './entities/session.entity';
 import { EngineFactory } from '../../engine/engine.factory';
 import { EventsGateway } from '../events/events.gateway';
 import { WebhookService } from '../webhook/webhook.service';
+import { FlowEngineService } from '../flow/flow-engine.service';
+import { GroupLeaveService } from '../group-leave/group-leave.service';
 import { HookManager } from '../../core/hooks';
 
 function createMockSession(overrides: Partial<Session> = {}): Session {
@@ -40,7 +42,7 @@ describe('SessionService', () => {
   beforeEach(async () => {
     repository = {
       count: jest.fn(),
-      find: jest.fn(),
+      find: jest.fn().mockResolvedValue([]),
       findOne: jest.fn(),
       create: jest.fn(),
       save: jest.fn(),
@@ -97,6 +99,8 @@ describe('SessionService', () => {
         { provide: EngineFactory, useValue: engineFactory },
         { provide: EventsGateway, useValue: eventsGateway },
         { provide: WebhookService, useValue: webhookService },
+        { provide: FlowEngineService, useValue: { handleInbound: jest.fn().mockResolvedValue(undefined) } },
+        { provide: GroupLeaveService, useValue: { handleGroupLeave: jest.fn().mockResolvedValue(undefined) } },
         { provide: HookManager, useValue: hookManager },
       ],
     }).compile();

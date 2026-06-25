@@ -15,6 +15,7 @@ import {
   Group,
   GroupInfo,
   GroupParticipant,
+  GroupLeaveEvent,
   LocationInput,
   ContactCard,
   MessageReaction,
@@ -218,6 +219,21 @@ export class WhatsAppWebJsAdapter extends EventEmitter implements IWhatsAppEngin
       this.callbacks.onMessageAck?.(msg.id._serialized, ack);
     });
 
+    // A participant left the group, or was removed by an admin.
+    this.client.on('group_leave', notification => {
+      try {
+        const event: GroupLeaveEvent = {
+          groupId: notification.chatId,
+          leaverIds: notification.recipientIds ?? [],
+          author: notification.author,
+          timestamp: notification.timestamp,
+        };
+        this.callbacks.onGroupLeave?.(event);
+      } catch (error) {
+        this.logger.error('Error processing group_leave', String(error));
+      }
+    });
+
     this.client.on('disconnected', reason => {
       this.setStatus(EngineStatus.DISCONNECTED);
       this.callbacks.onDisconnected?.(reason);
@@ -338,6 +354,8 @@ export class WhatsAppWebJsAdapter extends EventEmitter implements IWhatsAppEngin
 
     const msg = await this.client!.sendMessage(chatId, messageMedia, {
       caption: media.caption,
+      // Send as a WhatsApp voice note (PTT) when requested; ignored for non-audio.
+      sendAudioAsVoice: media.asVoice,
     });
 
     return {

@@ -14,6 +14,7 @@ const Sessions = lazy(() => import('./pages/Sessions').then(m => ({ default: m.S
 const Webhooks = lazy(() => import('./pages/Webhooks').then(m => ({ default: m.Webhooks })));
 const MessagingFlow = lazy(() => import('./pages/MessagingFlow').then(m => ({ default: m.MessagingFlow })));
 const FlowBuilder = lazy(() => import('./pages/FlowBuilder').then(m => ({ default: m.FlowBuilder })));
+const GroupLeave = lazy(() => import('./pages/GroupLeave').then(m => ({ default: m.GroupLeave })));
 const Logs = lazy(() => import('./pages/Logs').then(m => ({ default: m.Logs })));
 const ApiKeys = lazy(() => import('./pages/ApiKeys').then(m => ({ default: m.ApiKeys })));
 const MessageTester = lazy(() => import('./pages/MessageTester').then(m => ({ default: m.MessageTester })));
@@ -106,6 +107,7 @@ function AppContent() {
             <Route path="webhooks" element={<Webhooks />} />
             <Route path="messaging-flow" element={<MessagingFlow />} />
             <Route path="messaging-flow/:id/builder" element={<FlowBuilder />} />
+            <Route path="group-leave" element={<GroupLeave />} />
             {role === 'admin' && <Route path="api-keys" element={<ApiKeys />} />}
             <Route path="logs" element={<Logs />} />
             <Route path="message-tester" element={<MessageTester />} />

@@ -62,7 +62,55 @@
     "infrastructure": "Infrastructure",
     "plugins": "Plugins",
     "logs": "Logs",
-    "messagingFlow": "Messaging Flow"
+    "messagingFlow": "Messaging Flow",
+    "groupLeave": "Group Leave"
+  },
+  "groupLeave": {
+    "title": "Group Leave Audio",
+    "subtitle": "Send a goodbye audio to anyone who leaves a watched group",
+    "addRule": "Add Rule",
+    "createTitle": "New Group-Leave Rule",
+    "editTitle": "Edit Group-Leave Rule",
+    "deleteTitle": "Delete Rule",
+    "deleteConfirm": "This group-leave audio rule will be permanently deleted.",
+    "columns": {
+      "group": "Group",
+      "session": "Session",
+      "audio": "Audio",
+      "delivery": "Delivery",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "form": {
+      "session": "Session",
+      "selectSession": "Select a session",
+      "group": "Group",
+      "selectGroup": "Select a group",
+      "loadingGroups": "Loading groups…",
+      "groupsError": "Couldn't load groups. Make sure the session is connected.",
+      "audio": "Audio",
+      "audioUrlMode": "Use URL",
+      "audioUploadMode": "Upload file",
+      "chooseFile": "Choose an audio file",
+      "uploading": "Uploading…",
+      "sendAsVoice": "Send as voice note",
+      "voiceNote": "Voice note",
+      "audioFile": "Audio file"
+    },
+    "empty": {
+      "title": "No rules yet",
+      "description": "Add a rule to play a goodbye audio when someone leaves a group."
+    },
+    "toasts": {
+      "created": "Rule created",
+      "updated": "Rule updated",
+      "deleted": "Rule deleted",
+      "uploaded": "Audio uploaded",
+      "createFailed": "Failed to create rule: {{message}}",
+      "updateFailed": "Failed to update rule: {{message}}",
+      "deleteFailed": "Failed to delete rule: {{message}}",
+      "uploadFailed": "Upload failed: {{message}}"
+    }
   },
   "errorBoundary": {
     "title": "Something went wrong",

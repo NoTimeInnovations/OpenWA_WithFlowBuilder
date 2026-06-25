@@ -550,3 +550,69 @@ export const pluginsApi = {
   getEngines: () => request<Engine[]>('/infra/engines'),
   getCurrentEngine: () => request<{ engineType: string }>('/infra/engines/current'),
 };
+
+// =============================================================================
+// Group-Leave Audio Rules
+// =============================================================================
+
+export interface GroupLeaveRule {
+  id: string;
+  sessionId: string;
+  groupId: string;
+  groupName?: string | null;
+  audioUrl?: string | null;
+  audioStorageKey?: string | null;
+  audioMimetype?: string | null;
+  audioFilename?: string | null;
+  sendAsVoice: boolean;
+  enabled: boolean;
+  lastTriggeredAt?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AudioUploadResult {
+  storageKey: string;
+  mimetype: string;
+  filename: string;
+  size: number;
+}
+
+export interface CreateGroupLeaveRulePayload {
+  sessionId: string;
+  groupId: string;
+  groupName?: string;
+  audioUrl?: string;
+  audioStorageKey?: string;
+  audioMimetype?: string;
+  audioFilename?: string;
+  sendAsVoice?: boolean;
+  enabled?: boolean;
+}
+
+// Upload an audio file via multipart/form-data (request() only handles JSON).
+async function uploadGroupLeaveAudio(file: File): Promise<AudioUploadResult> {
+  const apiKey = sessionStorage.getItem('openwa_api_key');
+  const form = new FormData();
+  form.append('file', file);
+  const response = await fetch(`${API_BASE_URL}/group-leave-rules/upload-audio`, {
+    method: 'POST',
+    headers: { ...(apiKey ? { 'X-API-Key': apiKey } : {}) },
+    body: form,
+  });
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ message: response.statusText }));
+    throw new Error(error.message || `HTTP ${response.status}`);
+  }
+  return response.json();
+}
+
+export const groupLeaveApi = {
+  list: () => request<GroupLeaveRule[]>('/group-leave-rules'),
+  create: (data: CreateGroupLeaveRulePayload) =>
+    request<GroupLeaveRule>('/group-leave-rules', { method: 'POST', body: JSON.stringify(data) }),
+  update: (id: string, data: Partial<CreateGroupLeaveRulePayload>) =>
+    request<GroupLeaveRule>(`/group-leave-rules/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  delete: (id: string) => request<void>(`/group-leave-rules/${id}`, { method: 'DELETE' }),
+  uploadAudio: (file: File) => uploadGroupLeaveAudio(file),
+};
