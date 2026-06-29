@@ -15,7 +15,7 @@ import {
   Group,
   GroupInfo,
   GroupParticipant,
-  GroupLeaveEvent,
+  GroupParticipantEvent,
   LocationInput,
   ContactCard,
   MessageReaction,
@@ -219,15 +219,30 @@ export class WhatsAppWebJsAdapter extends EventEmitter implements IWhatsAppEngin
     // A participant left the group, or was removed by an admin.
     this.client.on('group_leave', notification => {
       try {
-        const event: GroupLeaveEvent = {
+        const event: GroupParticipantEvent = {
           groupId: notification.chatId,
-          leaverIds: notification.recipientIds ?? [],
+          participantIds: notification.recipientIds ?? [],
           author: notification.author,
           timestamp: notification.timestamp,
         };
         this.callbacks.onGroupLeave?.(event);
       } catch (error) {
         this.logger.error('Error processing group_leave', String(error));
+      }
+    });
+
+    // A participant joined the group (via invite link or added by an admin).
+    this.client.on('group_join', notification => {
+      try {
+        const event: GroupParticipantEvent = {
+          groupId: notification.chatId,
+          participantIds: notification.recipientIds ?? [],
+          author: notification.author,
+          timestamp: notification.timestamp,
+        };
+        this.callbacks.onGroupJoin?.(event);
+      } catch (error) {
+        this.logger.error('Error processing group_join', String(error));
       }
     });
 

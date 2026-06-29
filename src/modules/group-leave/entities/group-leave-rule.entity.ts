@@ -30,6 +30,10 @@ export class GroupLeaveRule {
   @JoinColumn({ name: 'sessionId' })
   session: Session;
 
+  /** Which participant event triggers this rule */
+  @Column({ type: 'varchar', length: 16, default: 'leave' })
+  event: 'join' | 'leave';
+
   /** Watched group chat id, e.g. "123456789@g.us" */
   @Column({ type: 'varchar', length: 255 })
   groupId: string;
@@ -55,6 +59,10 @@ export class GroupLeaveRule {
   /** Send the audio as a WhatsApp voice note (PTT) rather than an audio file */
   @Column({ type: 'boolean', default: true })
   sendAsVoice: boolean;
+
+  /** Seconds to wait after the event before sending the audio (0 = immediate) */
+  @Column({ type: 'int', default: 0 })
+  delaySeconds: number;
 
   @Column({ type: 'boolean', default: true })
   enabled: boolean;

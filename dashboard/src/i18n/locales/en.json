@@ -63,17 +63,18 @@
     "plugins": "Plugins",
     "logs": "Logs",
     "messagingFlow": "Messaging Flow",
-    "groupLeave": "Group Leave"
+    "groupLeave": "Group Join / Leave"
   },
   "groupLeave": {
-    "title": "Group Leave Audio",
-    "subtitle": "Send a goodbye audio to anyone who leaves a watched group",
+    "title": "Group Join / Leave Audio",
+    "subtitle": "Send an audio when someone joins or leaves a watched group",
     "addRule": "Add Rule",
-    "createTitle": "New Group-Leave Rule",
-    "editTitle": "Edit Group-Leave Rule",
+    "createTitle": "New Join / Leave Rule",
+    "editTitle": "Edit Join / Leave Rule",
     "deleteTitle": "Delete Rule",
-    "deleteConfirm": "This group-leave audio rule will be permanently deleted.",
+    "deleteConfirm": "This rule will be permanently deleted.",
     "columns": {
+      "event": "Event",
       "group": "Group",
       "session": "Session",
       "audio": "Audio",
@@ -82,6 +83,12 @@
       "actions": "Actions"
     },
     "form": {
+      "event": "Trigger event",
+      "eventJoin": "Join",
+      "eventLeave": "Leave",
+      "delay": "Delay before sending",
+      "delayHelp": "Seconds to wait after the event (0 = immediate, max 600). Not kept across a server restart.",
+      "delayTag": "{{count}}s delay",
       "session": "Session",
       "selectSession": "Select a session",
       "group": "Group",
@@ -103,7 +110,7 @@
     },
     "empty": {
       "title": "No rules yet",
-      "description": "Add a rule to play a goodbye audio when someone leaves a group."
+      "description": "Add a rule to play an audio when someone joins or leaves a group."
     },
     "toasts": {
       "created": "Rule created",

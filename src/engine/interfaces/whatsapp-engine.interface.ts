@@ -54,10 +54,10 @@ export interface Contact {
   profilePicUrl?: string;
 }
 
-/** Emitted when one or more participants leave (or are removed from) a group. */
-export interface GroupLeaveEvent {
+/** Emitted when one or more participants join or leave a group. */
+export interface GroupParticipantEvent {
   groupId: string; // group chat id (e.g. "12345@g.us")
-  leaverIds: string[]; // ids of the participants who left / were removed
+  participantIds: string[]; // ids of the participants who joined / left
   author: string; // id of whoever triggered the change
   timestamp: number;
 }
@@ -224,7 +224,8 @@ export interface EngineEventCallbacks {
   onMessageAck?: (messageId: string, ack: number) => void;
   onDisconnected?: (reason: string) => void;
   onStateChanged?: (state: EngineStatus) => void;
-  onGroupLeave?: (event: GroupLeaveEvent) => void;
+  onGroupLeave?: (event: GroupParticipantEvent) => void;
+  onGroupJoin?: (event: GroupParticipantEvent) => void;
 }
 
 export interface IWhatsAppEngine {

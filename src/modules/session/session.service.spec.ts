@@ -100,7 +100,7 @@ describe('SessionService', () => {
         { provide: EventsGateway, useValue: eventsGateway },
         { provide: WebhookService, useValue: webhookService },
         { provide: FlowEngineService, useValue: { handleInbound: jest.fn().mockResolvedValue(undefined) } },
-        { provide: GroupLeaveService, useValue: { handleGroupLeave: jest.fn().mockResolvedValue(undefined) } },
+        { provide: GroupLeaveService, useValue: { handleGroupEvent: jest.fn().mockResolvedValue(undefined) } },
         { provide: HookManager, useValue: hookManager },
       ],
     }).compile();

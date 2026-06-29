@@ -360,21 +360,44 @@ export class SessionService implements OnModuleDestroy, OnModuleInit {
         this.logger.log(`Participant(s) left group ${event.groupId}`, {
           sessionId: id,
           groupId: event.groupId,
-          leaverIds: event.leaverIds,
+          leaverIds: event.participantIds,
           action: 'group_leave',
         });
 
         // Dispatch to webhooks (the 'group.leave' event type is already supported)
         void this.webhookService.dispatch(id, 'group.leave', {
           groupId: event.groupId,
-          leaverIds: event.leaverIds,
+          leaverIds: event.participantIds,
           author: event.author,
           timestamp: event.timestamp,
         });
 
         // Send the configured goodbye audio to whoever left (fire-and-forget)
-        void this.groupLeaveService.handleGroupLeave(id, event.groupId, event.leaverIds).catch(err =>
+        void this.groupLeaveService.handleGroupEvent(id, event.groupId, event.participantIds, 'leave').catch(err =>
           this.logger.error('Group-leave audio handler error', err instanceof Error ? err.message : String(err), {
+            sessionId: id,
+          }),
+        );
+      },
+      onGroupJoin: (event): void => {
+        this.logger.log(`Participant(s) joined group ${event.groupId}`, {
+          sessionId: id,
+          groupId: event.groupId,
+          joinerIds: event.participantIds,
+          action: 'group_join',
+        });
+
+        // Dispatch to webhooks (the 'group.join' event type is already supported)
+        void this.webhookService.dispatch(id, 'group.join', {
+          groupId: event.groupId,
+          joinerIds: event.participantIds,
+          author: event.author,
+          timestamp: event.timestamp,
+        });
+
+        // Send the configured welcome audio to whoever joined (fire-and-forget)
+        void this.groupLeaveService.handleGroupEvent(id, event.groupId, event.participantIds, 'join').catch(err =>
+          this.logger.error('Group-join audio handler error', err instanceof Error ? err.message : String(err), {
             sessionId: id,
           }),
         );

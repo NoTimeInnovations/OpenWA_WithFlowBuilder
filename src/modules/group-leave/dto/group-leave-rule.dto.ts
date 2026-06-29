@@ -1,10 +1,21 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsString, IsOptional, IsBoolean, IsUUID, MaxLength } from 'class-validator';
+import { IsString, IsOptional, IsBoolean, IsUUID, MaxLength, IsIn, IsInt, Min, Max } from 'class-validator';
+
+export const GROUP_EVENTS = ['join', 'leave'] as const;
+export type GroupEvent = (typeof GROUP_EVENTS)[number];
+
+// Max delay before sending (10 minutes). Held in-memory, so it doesn't survive a restart.
+export const MAX_DELAY_SECONDS = 600;
 
 export class CreateGroupLeaveRuleDto {
   @ApiProperty({ description: 'Session that owns the watched group' })
   @IsUUID()
   sessionId: string;
+
+  @ApiPropertyOptional({ description: 'Which event triggers this rule', enum: GROUP_EVENTS, default: 'leave' })
+  @IsOptional()
+  @IsIn(GROUP_EVENTS)
+  event?: GroupEvent;
 
   @ApiProperty({ description: 'Watched group chat id', example: '123456789@g.us' })
   @IsString()
@@ -46,6 +57,13 @@ export class CreateGroupLeaveRuleDto {
   @IsBoolean()
   sendAsVoice?: boolean;
 
+  @ApiPropertyOptional({ description: `Seconds to wait before sending (0–${MAX_DELAY_SECONDS})`, default: 0 })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(MAX_DELAY_SECONDS)
+  delaySeconds?: number;
+
   @ApiPropertyOptional({ description: 'Enable/disable the rule', default: true })
   @IsOptional()
   @IsBoolean()
@@ -53,6 +71,11 @@ export class CreateGroupLeaveRuleDto {
 }
 
 export class UpdateGroupLeaveRuleDto {
+  @ApiPropertyOptional({ description: 'Which event triggers this rule', enum: GROUP_EVENTS })
+  @IsOptional()
+  @IsIn(GROUP_EVENTS)
+  event?: GroupEvent;
+
   @ApiPropertyOptional({ description: 'Watched group chat id' })
   @IsOptional()
   @IsString()
@@ -94,6 +117,13 @@ export class UpdateGroupLeaveRuleDto {
   @IsBoolean()
   sendAsVoice?: boolean;
 
+  @ApiPropertyOptional({ description: `Seconds to wait before sending (0–${MAX_DELAY_SECONDS})` })
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Max(MAX_DELAY_SECONDS)
+  delaySeconds?: number;
+
   @ApiPropertyOptional({ description: 'Enable/disable the rule' })
   @IsOptional()
   @IsBoolean()
@@ -121,6 +151,9 @@ export class GroupLeaveRuleResponseDto {
   @ApiProperty()
   sessionId: string;
 
+  @ApiProperty({ enum: GROUP_EVENTS })
+  event: GroupEvent;
+
   @ApiProperty()
   groupId: string;
 
@@ -141,6 +174,9 @@ export class GroupLeaveRuleResponseDto {
 
   @ApiProperty()
   sendAsVoice: boolean;
+
+  @ApiProperty()
+  delaySeconds: number;
 
   @ApiProperty()
   enabled: boolean;

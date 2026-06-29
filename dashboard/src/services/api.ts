@@ -564,9 +564,12 @@ export const pluginsApi = {
 // Group-Leave Audio Rules
 // =============================================================================
 
+export type GroupEvent = 'join' | 'leave';
+
 export interface GroupLeaveRule {
   id: string;
   sessionId: string;
+  event: GroupEvent;
   groupId: string;
   groupName?: string | null;
   audioUrl?: string | null;
@@ -574,6 +577,7 @@ export interface GroupLeaveRule {
   audioMimetype?: string | null;
   audioFilename?: string | null;
   sendAsVoice: boolean;
+  delaySeconds: number;
   enabled: boolean;
   lastTriggeredAt?: string | null;
   createdAt: string;
@@ -589,6 +593,7 @@ export interface AudioUploadResult {
 
 export interface CreateGroupLeaveRulePayload {
   sessionId: string;
+  event?: GroupEvent;
   groupId: string;
   groupName?: string;
   audioUrl?: string;
@@ -596,6 +601,7 @@ export interface CreateGroupLeaveRulePayload {
   audioMimetype?: string;
   audioFilename?: string;
   sendAsVoice?: boolean;
+  delaySeconds?: number;
   enabled?: boolean;
 }
 

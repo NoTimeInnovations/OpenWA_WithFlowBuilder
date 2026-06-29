@@ -4,7 +4,7 @@ import { Repository } from 'typeorm';
 import * as crypto from 'crypto';
 import * as path from 'path';
 import { GroupLeaveRule } from './entities/group-leave-rule.entity';
-import { CreateGroupLeaveRuleDto, UpdateGroupLeaveRuleDto } from './dto';
+import { CreateGroupLeaveRuleDto, UpdateGroupLeaveRuleDto, GroupEvent, MAX_DELAY_SECONDS } from './dto';
 import { SessionService } from '../session/session.service';
 import { StorageService } from '../../common/storage/storage.service';
 import { MediaInput } from '../../engine/interfaces/whatsapp-engine.interface';
@@ -65,6 +65,7 @@ export class GroupLeaveService {
     }
     const rule = this.ruleRepo.create({
       sessionId: dto.sessionId,
+      event: dto.event ?? 'leave',
       groupId: dto.groupId,
       groupName: dto.groupName || null,
       audioUrl: dto.audioUrl || null,
@@ -72,6 +73,7 @@ export class GroupLeaveService {
       audioMimetype: dto.audioMimetype || null,
       audioFilename: dto.audioFilename || null,
       sendAsVoice: dto.sendAsVoice ?? true,
+      delaySeconds: dto.delaySeconds ?? 0,
       enabled: dto.enabled ?? true,
     });
     return this.ruleRepo.save(rule);
@@ -80,6 +82,7 @@ export class GroupLeaveService {
   async update(id: string, dto: UpdateGroupLeaveRuleDto): Promise<GroupLeaveRule> {
     const rule = await this.findOne(id);
 
+    if (dto.event !== undefined) rule.event = dto.event;
     if (dto.groupId !== undefined) rule.groupId = dto.groupId;
     if (dto.groupName !== undefined) rule.groupName = dto.groupName;
     if (dto.audioUrl !== undefined) rule.audioUrl = dto.audioUrl || null;
@@ -87,6 +90,7 @@ export class GroupLeaveService {
     if (dto.audioMimetype !== undefined) rule.audioMimetype = dto.audioMimetype || null;
     if (dto.audioFilename !== undefined) rule.audioFilename = dto.audioFilename || null;
     if (dto.sendAsVoice !== undefined) rule.sendAsVoice = dto.sendAsVoice;
+    if (dto.delaySeconds !== undefined) rule.delaySeconds = dto.delaySeconds;
     if (dto.enabled !== undefined) rule.enabled = dto.enabled;
 
     if (!rule.audioUrl && !rule.audioStorageKey) {
@@ -132,49 +136,76 @@ export class GroupLeaveService {
   }
 
   // ===========================================================================
-  // Trigger — called from SessionService when group_leave fires
+  // Trigger — called from SessionService when group_join / group_leave fires
   // ===========================================================================
 
-  async handleGroupLeave(sessionId: string, groupId: string, leaverIds: string[]): Promise<void> {
-    const rules = await this.ruleRepo.find({ where: { sessionId, groupId, enabled: true } });
+  async handleGroupEvent(
+    sessionId: string,
+    groupId: string,
+    participantIds: string[],
+    event: GroupEvent,
+  ): Promise<void> {
+    const rules = await this.ruleRepo.find({ where: { sessionId, groupId, event, enabled: true } });
     if (rules.length === 0) {
-      this.logger.log(`group_leave for ${groupId} ignored — no enabled rule for this group`, { sessionId, groupId });
+      this.logger.log(`group_${event} for ${groupId} ignored — no enabled rule for this group`, {
+        sessionId,
+        groupId,
+        event,
+      });
       return;
     }
 
     const engine = this.sessionService.getEngine(sessionId);
     if (!engine) {
-      this.logger.warn('Session not connected — cannot send group-leave audio', { sessionId, groupId });
+      this.logger.warn('Session not connected — cannot send group audio', { sessionId, groupId, event });
       return;
     }
 
-    // Don't message ourselves if the bot is the one that was removed.
+    // Don't message ourselves if the bot is the affected participant.
     const botPhone = engine.getPhoneNumber();
-    const recipients = (leaverIds ?? []).filter(id => !!id && !(botPhone && id.startsWith(`${botPhone}@`)));
+    const recipients = (participantIds ?? []).filter(id => !!id && !(botPhone && id.startsWith(`${botPhone}@`)));
     if (recipients.length === 0) return;
 
-    this.logger.log(`Sending group-leave audio to ${recipients.length} leaver(s)`, { sessionId, groupId, recipients });
+    this.logger.log(`group_${event}: ${recipients.length} recipient(s) for ${groupId}`, {
+      sessionId,
+      groupId,
+      event,
+      recipients,
+    });
 
     for (const rule of rules) {
       let media: MediaInput;
       try {
         media = await this.buildMedia(rule);
       } catch (err) {
-        this.logger.error('Failed to load group-leave audio', err instanceof Error ? err.message : String(err), {
+        this.logger.error('Failed to load group audio', err instanceof Error ? err.message : String(err), {
           ruleId: rule.id,
         });
         continue;
       }
 
+      // Optional per-rule delay before sending (capped; held in-memory).
+      const delaySeconds = Math.min(Math.max(rule.delaySeconds ?? 0, 0), MAX_DELAY_SECONDS);
+      if (delaySeconds > 0) {
+        await new Promise(resolve => setTimeout(resolve, delaySeconds * 1000));
+      }
+
+      // Re-fetch the engine in case the session reconnected during the delay.
+      const sendEngine = this.sessionService.getEngine(sessionId);
+      if (!sendEngine) {
+        this.logger.warn('Session disconnected before send — skipping', { sessionId, groupId, event, ruleId: rule.id });
+        continue;
+      }
+
       for (const recipient of recipients) {
         try {
-          await engine.sendAudioMessage(recipient, media);
-          this.logger.log(`Sent group-leave audio to ${recipient}`, { sessionId, groupId, ruleId: rule.id });
+          await sendEngine.sendAudioMessage(recipient, media);
+          this.logger.log(`Sent group-${event} audio to ${recipient}`, { sessionId, groupId, event, ruleId: rule.id });
         } catch (err) {
           this.logger.error(
-            `Failed to send group-leave audio to ${recipient}`,
+            `Failed to send group-${event} audio to ${recipient}`,
             err instanceof Error ? err.message : String(err),
-            { sessionId, groupId, ruleId: rule.id },
+            { sessionId, groupId, event, ruleId: rule.id },
           );
         }
       }

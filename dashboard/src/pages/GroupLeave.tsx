@@ -13,7 +13,7 @@ import {
   Link as LinkIcon,
   Volume2,
 } from 'lucide-react';
-import { type GroupLeaveRule, type WaGroup, groupLeaveApi } from '../services/api';
+import { type GroupLeaveRule, type WaGroup, type GroupEvent, groupLeaveApi } from '../services/api';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { useRole } from '../hooks/useRole';
 import {
@@ -31,6 +31,7 @@ type AudioMode = 'url' | 'upload';
 
 interface RuleForm {
   sessionId: string;
+  event: GroupEvent;
   groupId: string;
   groupName: string;
   audioMode: AudioMode;
@@ -39,11 +40,13 @@ interface RuleForm {
   audioMimetype: string;
   audioFilename: string;
   sendAsVoice: boolean;
+  delaySeconds: number;
   enabled: boolean;
 }
 
 const emptyForm: RuleForm = {
   sessionId: '',
+  event: 'leave',
   groupId: '',
   groupName: '',
   audioMode: 'url',
@@ -52,6 +55,7 @@ const emptyForm: RuleForm = {
   audioMimetype: '',
   audioFilename: '',
   sendAsVoice: true,
+  delaySeconds: 0,
   enabled: true,
 };
 
@@ -114,6 +118,7 @@ export function GroupLeave() {
     setEditId(rule.id);
     setForm({
       sessionId: rule.sessionId,
+      event: rule.event,
       groupId: rule.groupId,
       groupName: rule.groupName || '',
       audioMode: rule.audioStorageKey ? 'upload' : 'url',
@@ -122,6 +127,7 @@ export function GroupLeave() {
       audioMimetype: rule.audioMimetype || '',
       audioFilename: rule.audioFilename || '',
       sendAsVoice: rule.sendAsVoice,
+      delaySeconds: rule.delaySeconds,
       enabled: rule.enabled,
     });
     setShowEdit(true);
@@ -162,9 +168,11 @@ export function GroupLeave() {
   // Shared rule fields WITHOUT sessionId (the update DTO rejects sessionId; create adds it).
   const buildPayload = () => {
     const base = {
+      event: form.event,
       groupId: form.groupId,
       groupName: form.groupName || undefined,
       sendAsVoice: form.sendAsVoice,
+      delaySeconds: form.delaySeconds,
       enabled: form.enabled,
     };
     if (form.audioMode === 'upload') {
@@ -307,6 +315,32 @@ export function GroupLeave() {
     </>
   );
 
+  const renderEventSelect = () => (
+    <>
+      <label>{t('groupLeave.form.event')}</label>
+      <select value={form.event} onChange={e => setForm(f => ({ ...f, event: e.target.value as GroupEvent }))}>
+        <option value="leave">{t('groupLeave.form.eventLeave')}</option>
+        <option value="join">{t('groupLeave.form.eventJoin')}</option>
+      </select>
+    </>
+  );
+
+  const renderDelayInput = () => (
+    <>
+      <label>{t('groupLeave.form.delay')}</label>
+      <input
+        type="number"
+        min={0}
+        max={600}
+        value={form.delaySeconds}
+        onChange={e =>
+          setForm(f => ({ ...f, delaySeconds: Math.max(0, Math.min(600, Math.floor(Number(e.target.value) || 0))) }))
+        }
+      />
+      <p className="field-hint">{t('groupLeave.form.delayHelp')}</p>
+    </>
+  );
+
   const renderGroupSelect = () => (
     <>
       <label>{t('groupLeave.form.group')}</label>
@@ -380,6 +414,7 @@ export function GroupLeave() {
               </button>
             </div>
             <div className="modal-body">
+              {renderEventSelect()}
               {showEdit ? (
                 <>
                   <label>{t('groupLeave.form.session')}</label>
@@ -408,6 +443,8 @@ export function GroupLeave() {
               )}
 
               {renderAudioFields()}
+
+              {renderDelayInput()}
 
               {showEdit && (
                 <div className="toggle-group">
@@ -471,6 +508,7 @@ export function GroupLeave() {
       <div className="group-leave-table-container">
         <div className="group-leave-table">
           <div className="table-row header">
+            <span>{t('groupLeave.columns.event')}</span>
             <span>{t('groupLeave.columns.group')}</span>
             <span>{t('groupLeave.columns.session')}</span>
             <span>{t('groupLeave.columns.audio')}</span>
@@ -487,6 +525,11 @@ export function GroupLeave() {
           ) : (
             rules.map(rule => (
               <div key={rule.id} className="table-row">
+                <span>
+                  <span className={`event-badge ${rule.event}`}>
+                    {rule.event === 'join' ? t('groupLeave.form.eventJoin') : t('groupLeave.form.eventLeave')}
+                  </span>
+                </span>
                 <span className="group-cell">{rule.groupName || rule.groupId}</span>
                 <span>{sessionName(rule.sessionId)}</span>
                 <span className="audio-cell">
@@ -497,6 +540,9 @@ export function GroupLeave() {
                     <Volume2 size={13} />
                     {rule.sendAsVoice ? t('groupLeave.form.voiceNote') : t('groupLeave.form.audioFile')}
                   </span>
+                  {rule.delaySeconds > 0 && (
+                    <span className="delay-tag">{t('groupLeave.form.delayTag', { count: rule.delaySeconds })}</span>
+                  )}
                 </span>
                 <span>
                   <span className={`status-badge ${rule.enabled ? 'active' : 'inactive'}`}>
