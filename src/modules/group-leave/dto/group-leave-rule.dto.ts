@@ -18,7 +18,7 @@ import { Type } from 'class-transformer';
 export const GROUP_EVENTS = ['join', 'leave'] as const;
 export type GroupEvent = (typeof GROUP_EVENTS)[number];
 
-export const MEDIA_KINDS = ['audio', 'video', 'image', 'document'] as const;
+export const MEDIA_KINDS = ['audio', 'video', 'image', 'document', 'text'] as const;
 export type MediaKind = (typeof MEDIA_KINDS)[number];
 
 // Max delay before sending (10 minutes). Held in-memory, so it doesn't survive a restart.
@@ -30,6 +30,12 @@ export class RuleMediaItemDto {
   @ApiProperty({ enum: MEDIA_KINDS })
   @IsIn(MEDIA_KINDS)
   kind: MediaKind;
+
+  @ApiPropertyOptional({ description: 'Message body (kind = text)' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(4096)
+  text?: string;
 
   @ApiPropertyOptional({ description: 'Public URL (provide this OR a storageKey)' })
   @IsOptional()

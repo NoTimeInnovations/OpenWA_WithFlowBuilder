@@ -11,6 +11,7 @@ import {
   UserMinus,
   Upload,
   Link as LinkIcon,
+  MessageSquare,
 } from 'lucide-react';
 import {
   type GroupLeaveRule,
@@ -34,6 +35,7 @@ import './GroupLeave.css';
 
 interface MediaItemForm {
   kind: MediaKind;
+  text?: string;
   url?: string;
   storageKey?: string;
   mimetype?: string;
@@ -67,6 +69,7 @@ function ruleToMediaForm(rule: GroupLeaveRule): MediaItemForm[] {
   if (rule.media?.length) {
     return rule.media.map(m => ({
       kind: m.kind,
+      text: m.text || undefined,
       url: m.url || undefined,
       storageKey: m.storageKey || undefined,
       mimetype: m.mimetype || undefined,
@@ -176,6 +179,8 @@ export function GroupLeave() {
   const addUrlItem = () =>
     setForm(f => ({ ...f, media: [...f.media, { kind: 'audio', url: '', asVoice: true }] }));
 
+  const addTextItem = () => setForm(f => ({ ...f, media: [...f.media, { kind: 'text', text: '' }] }));
+
   const updateItem = (index: number, patch: Partial<MediaItemForm>) =>
     setForm(f => ({ ...f, media: f.media.map((m, i) => (i === index ? { ...m, ...patch } : m)) }));
 
@@ -220,18 +225,24 @@ export function GroupLeave() {
     groupName: form.groupName || undefined,
     delaySeconds: form.delaySeconds,
     enabled: form.enabled,
-    media: form.media.map(m => ({
-      kind: m.kind,
-      url: m.storageKey ? undefined : m.url?.trim() || undefined,
-      storageKey: m.storageKey || undefined,
-      mimetype: m.mimetype || undefined,
-      filename: m.filename || undefined,
-      caption: m.kind === 'audio' ? undefined : m.caption || undefined,
-      asVoice: m.kind === 'audio' ? (m.asVoice ?? true) : undefined,
-    })),
+    media: form.media.map(m =>
+      m.kind === 'text'
+        ? { kind: 'text' as const, text: m.text?.trim() || undefined }
+        : {
+            kind: m.kind,
+            url: m.storageKey ? undefined : m.url?.trim() || undefined,
+            storageKey: m.storageKey || undefined,
+            mimetype: m.mimetype || undefined,
+            filename: m.filename || undefined,
+            caption: m.kind === 'audio' ? undefined : m.caption || undefined,
+            asVoice: m.kind === 'audio' ? (m.asVoice ?? true) : undefined,
+          },
+    ),
   });
 
-  const hasMedia = form.media.length > 0 && form.media.every(m => m.storageKey || (m.url && m.url.trim()));
+  const isItemReady = (m: MediaItemForm) =>
+    m.kind === 'text' ? !!m.text && m.text.trim().length > 0 : !!m.storageKey || !!(m.url && m.url.trim());
+  const hasMedia = form.media.length > 0 && form.media.every(isItemReady);
   const canSubmit = !!form.sessionId && !!form.groupId && hasMedia && !uploading;
 
   const handleCreate = async () => {
@@ -348,12 +359,15 @@ export function GroupLeave() {
                 value={m.kind}
                 onChange={e => updateItem(i, { kind: e.target.value as MediaKind })}
               >
+                <option value="text">{t('groupLeave.form.kindText')}</option>
                 <option value="audio">{t('groupLeave.form.kindAudio')}</option>
                 <option value="video">{t('groupLeave.form.kindVideo')}</option>
                 <option value="image">{t('groupLeave.form.kindImage')}</option>
                 <option value="document">{t('groupLeave.form.kindDocument')}</option>
               </select>
-              {m.storageKey ? (
+              {m.kind === 'text' ? (
+                <span className="media-file">{t('groupLeave.form.textMessage')}</span>
+              ) : m.storageKey ? (
                 <span className="media-file" title={m.filename || ''}>
                   {m.filename || t('groupLeave.form.uploadedFile')}
                 </span>
@@ -370,7 +384,15 @@ export function GroupLeave() {
                 <X size={14} />
               </button>
             </div>
-            {m.kind === 'audio' ? (
+            {m.kind === 'text' ? (
+              <textarea
+                className="media-text"
+                rows={2}
+                placeholder={t('groupLeave.form.textPlaceholder')}
+                value={m.text || ''}
+                onChange={e => updateItem(i, { text: e.target.value })}
+              />
+            ) : m.kind === 'audio' ? (
               <label className="media-voice">
                 <input
                   type="checkbox"
@@ -415,6 +437,9 @@ export function GroupLeave() {
         </label>
         <button type="button" className="btn-secondary" onClick={addUrlItem}>
           <LinkIcon size={14} /> {t('groupLeave.form.addUrl')}
+        </button>
+        <button type="button" className="btn-secondary" onClick={addTextItem}>
+          <MessageSquare size={14} /> {t('groupLeave.form.addText')}
         </button>
       </div>
     </>

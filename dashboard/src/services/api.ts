@@ -565,10 +565,11 @@ export const pluginsApi = {
 // =============================================================================
 
 export type GroupEvent = 'join' | 'leave';
-export type MediaKind = 'audio' | 'video' | 'image' | 'document';
+export type MediaKind = 'audio' | 'video' | 'image' | 'document' | 'text';
 
 export interface RuleMediaItem {
   kind: MediaKind;
+  text?: string | null;
   url?: string | null;
   storageKey?: string | null;
   mimetype?: string | null;

@@ -12,11 +12,12 @@ import { Session } from '../../session/entities/session.entity';
 import { DateTransformer } from '../../../common/transformers/date.transformer';
 import { dateColumnType, jsonColumnType } from '../../../common/utils/column-types';
 
-export type MediaKind = 'audio' | 'video' | 'image' | 'document';
+export type MediaKind = 'audio' | 'video' | 'image' | 'document' | 'text';
 
-/** One media attachment a rule sends (provided as a URL or an uploaded file). */
+/** One item a rule sends: a text message, or media provided as a URL / uploaded file. */
 export interface RuleMediaItem {
   kind: MediaKind;
+  text?: string | null; // kind === 'text'
   url?: string | null;
   storageKey?: string | null;
   mimetype?: string | null;

@@ -44,14 +44,34 @@ const DEFAULT_MIME: Record<MediaKind, string> = {
   video: 'video/mp4',
   image: 'image/jpeg',
   document: 'application/octet-stream',
+  text: 'text/plain', // unused (text is sent as a message, not media)
 };
 
-function kindFromMime(mimetype: string | undefined): MediaKind | null {
+// Uploads are never text — they're classified by their mime type.
+function kindFromMime(mimetype: string | undefined): Exclude<MediaKind, 'text'> | null {
   if (!mimetype) return null;
   if (mimetype.startsWith('audio/')) return 'audio';
   if (mimetype.startsWith('video/')) return 'video';
   if (mimetype.startsWith('image/')) return 'image';
   return 'document'; // everything else is sent as a document
+}
+
+/** True if an item will actually send something (non-empty text, or a url/file). */
+function isUsableItem(item: {
+  kind: MediaKind;
+  text?: string | null;
+  url?: string | null;
+  storageKey?: string | null;
+}): boolean {
+  if (item.kind === 'text') return !!item.text && item.text.trim().length > 0;
+  return !!item.storageKey || !!(item.url && item.url.trim());
+}
+
+/** A rule item resolved to something sendable: a text message or a media payload. */
+interface ResolvedItem {
+  kind: MediaKind;
+  input?: MediaInput;
+  text?: string;
 }
 
 @Injectable()
@@ -83,8 +103,8 @@ export class GroupLeaveService {
   }
 
   async create(dto: CreateGroupLeaveRuleDto): Promise<GroupLeaveRule> {
-    if (!(dto.media?.length ?? 0) && !dto.audioUrl && !dto.audioStorageKey) {
-      throw new BadRequestException('Add at least one media item (a URL or an uploaded file)');
+    if (!dto.media?.some(isUsableItem) && !dto.audioUrl && !dto.audioStorageKey) {
+      throw new BadRequestException('Add at least one item (a text message, a URL, or an uploaded file)');
     }
     const rule = this.ruleRepo.create({
       sessionId: dto.sessionId,
@@ -118,8 +138,8 @@ export class GroupLeaveService {
     if (dto.delaySeconds !== undefined) rule.delaySeconds = dto.delaySeconds;
     if (dto.enabled !== undefined) rule.enabled = dto.enabled;
 
-    if (!(rule.media?.length ?? 0) && !rule.audioUrl && !rule.audioStorageKey) {
-      throw new BadRequestException('A rule must have at least one media item');
+    if (!rule.media?.some(isUsableItem) && !rule.audioUrl && !rule.audioStorageKey) {
+      throw new BadRequestException('A rule must have at least one item');
     }
 
     return this.ruleRepo.save(rule);
@@ -215,7 +235,7 @@ export class GroupLeaveService {
         continue;
       }
 
-      let items: Array<{ kind: MediaKind; input: MediaInput }>;
+      let items: ResolvedItem[];
       try {
         items = await this.resolveMediaItems(rule);
       } catch (err) {
@@ -225,16 +245,16 @@ export class GroupLeaveService {
         continue;
       }
       if (items.length === 0) {
-        this.logger.warn('Rule has no usable media — skipping', { ruleId: rule.id });
+        this.logger.warn('Rule has no usable items — skipping', { ruleId: rule.id });
         continue;
       }
 
       // Send every item, in order, to every recipient.
       for (const recipient of recipients) {
-        for (const { kind, input } of items) {
+        for (const item of items) {
           try {
-            await this.sendItem(sendEngine, kind, recipient, input);
-            this.logger.log(`Sent group-${event} ${kind} to ${recipient}`, {
+            await this.sendItem(sendEngine, recipient, item);
+            this.logger.log(`Sent group-${event} ${item.kind} to ${recipient}`, {
               sessionId,
               groupId,
               event,
@@ -242,7 +262,7 @@ export class GroupLeaveService {
             });
           } catch (err) {
             this.logger.error(
-              `Failed to send group-${event} ${kind} to ${recipient}`,
+              `Failed to send group-${event} ${item.kind} to ${recipient}`,
               err instanceof Error ? err.message : String(err),
               { sessionId, groupId, event, ruleId: rule.id },
             );
@@ -257,11 +277,16 @@ export class GroupLeaveService {
     }
   }
 
-  /** Build the ordered media items for a rule (new media[] or the legacy single-audio fallback). */
-  private async resolveMediaItems(rule: GroupLeaveRule): Promise<Array<{ kind: MediaKind; input: MediaInput }>> {
+  /** Build the ordered sendable items for a rule (new media[] or the legacy single-audio fallback). */
+  private async resolveMediaItems(rule: GroupLeaveRule): Promise<ResolvedItem[]> {
     const source: RuleMediaItem[] = rule.media?.length ? rule.media : this.legacyMediaItems(rule);
-    const out: Array<{ kind: MediaKind; input: MediaInput }> = [];
+    const out: ResolvedItem[] = [];
     for (const item of source) {
+      if (item.kind === 'text') {
+        const text = (item.text || '').trim();
+        if (text) out.push({ kind: 'text', text });
+        continue;
+      }
       const input = await this.toMediaInput(item);
       if (input) out.push({ kind: item.kind, input });
     }
@@ -300,13 +325,12 @@ export class GroupLeaveService {
     };
   }
 
-  private sendItem(
-    engine: IWhatsAppEngine,
-    kind: MediaKind,
-    recipient: string,
-    input: MediaInput,
-  ): Promise<MessageResult> {
-    switch (kind) {
+  private sendItem(engine: IWhatsAppEngine, recipient: string, item: ResolvedItem): Promise<MessageResult> {
+    if (item.kind === 'text') {
+      return engine.sendTextMessage(recipient, item.text ?? '');
+    }
+    const input = item.input as MediaInput;
+    switch (item.kind) {
       case 'image':
         return engine.sendImageMessage(recipient, input);
       case 'video':
