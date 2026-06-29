@@ -69,6 +69,7 @@
     "title": "Group Join / Leave Media",
     "subtitle": "Send one or more files when someone joins or leaves a watched group",
     "addRule": "Add Rule",
+    "back": "Back",
     "createTitle": "New Join / Leave Rule",
     "editTitle": "Edit Join / Leave Rule",
     "deleteTitle": "Delete Rule",

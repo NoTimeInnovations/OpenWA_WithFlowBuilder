@@ -12,6 +12,7 @@ import {
   Upload,
   Link as LinkIcon,
   MessageSquare,
+  ArrowLeft,
 } from 'lucide-react';
 import {
   type GroupLeaveRule,
@@ -104,11 +105,10 @@ export function GroupLeave() {
   const updateMutation = useUpdateGroupLeaveRuleMutation();
   const deleteMutation = useDeleteGroupLeaveRuleMutation();
 
-  const [showCreate, setShowCreate] = useState(false);
-  const [showEdit, setShowEdit] = useState(false);
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [editId, setEditId] = useState<string | null>(null);
   const [showDelete, setShowDelete] = useState(false);
   const [form, setForm] = useState<RuleForm>(emptyForm);
-  const [editId, setEditId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<GroupLeaveRule | null>(null);
   const [uploading, setUploading] = useState(false);
   const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
@@ -117,7 +117,7 @@ export function GroupLeave() {
     data: groups = [],
     isError: groupsError,
     isLoading: groupsLoading,
-  } = useSessionGroupsQuery(form.sessionId, (showCreate || showEdit) && !!form.sessionId);
+  } = useSessionGroupsQuery(form.sessionId, editorOpen && !!form.sessionId);
 
   useEffect(() => {
     if (toast) {
@@ -151,7 +151,8 @@ export function GroupLeave() {
 
   const openCreate = () => {
     setForm(emptyForm);
-    setShowCreate(true);
+    setEditId(null);
+    setEditorOpen(true);
   };
 
   const openEdit = (rule: GroupLeaveRule) => {
@@ -165,19 +166,17 @@ export function GroupLeave() {
       delaySeconds: rule.delaySeconds,
       enabled: rule.enabled,
     });
-    setShowEdit(true);
+    setEditorOpen(true);
   };
 
-  const closeModals = () => {
-    setShowCreate(false);
-    setShowEdit(false);
+  const closeEditor = () => {
+    setEditorOpen(false);
     setEditId(null);
     setForm(emptyForm);
   };
 
   // ── media item helpers ───────────────────────────────────────────────
-  const addUrlItem = () =>
-    setForm(f => ({ ...f, media: [...f.media, { kind: 'audio', url: '', asVoice: true }] }));
+  const addUrlItem = () => setForm(f => ({ ...f, media: [...f.media, { kind: 'audio', url: '', asVoice: true }] }));
 
   const addTextItem = () => setForm(f => ({ ...f, media: [...f.media, { kind: 'text', text: '' }] }));
 
@@ -245,32 +244,21 @@ export function GroupLeave() {
   const hasMedia = form.media.length > 0 && form.media.every(isItemReady);
   const canSubmit = !!form.sessionId && !!form.groupId && hasMedia && !uploading;
 
-  const handleCreate = async () => {
+  const handleSave = async () => {
     if (!canSubmit) return;
     try {
-      await createMutation.mutateAsync({ sessionId: form.sessionId, ...buildPayload() });
-      closeModals();
-      setToast({ type: 'success', message: t('groupLeave.toasts.created') });
+      if (editId) {
+        await updateMutation.mutateAsync({ id: editId, data: buildPayload() });
+        setToast({ type: 'success', message: t('groupLeave.toasts.updated') });
+      } else {
+        await createMutation.mutateAsync({ sessionId: form.sessionId, ...buildPayload() });
+        setToast({ type: 'success', message: t('groupLeave.toasts.created') });
+      }
+      closeEditor();
     } catch (err) {
       setToast({
         type: 'error',
-        message: t('groupLeave.toasts.createFailed', {
-          message: err instanceof Error ? err.message : t('common.unknownError'),
-        }),
-      });
-    }
-  };
-
-  const handleEdit = async () => {
-    if (!editId || !canSubmit) return;
-    try {
-      await updateMutation.mutateAsync({ id: editId, data: buildPayload() });
-      closeModals();
-      setToast({ type: 'success', message: t('groupLeave.toasts.updated') });
-    } catch (err) {
-      setToast({
-        type: 'error',
-        message: t('groupLeave.toasts.updateFailed', {
+        message: t(editId ? 'groupLeave.toasts.updateFailed' : 'groupLeave.toasts.createFailed', {
           message: err instanceof Error ? err.message : t('common.unknownError'),
         }),
       });
@@ -294,6 +282,7 @@ export function GroupLeave() {
     }
   };
 
+  // ── field renderers ──────────────────────────────────────────────────
   const renderEventSelect = () => (
     <>
       <label>{t('groupLeave.form.event')}</label>
@@ -304,19 +293,20 @@ export function GroupLeave() {
     </>
   );
 
-  const renderDelayInput = () => (
+  const renderSessionSelect = () => (
     <>
-      <label>{t('groupLeave.form.delay')}</label>
-      <input
-        type="number"
-        min={0}
-        max={600}
-        value={form.delaySeconds}
-        onChange={e =>
-          setForm(f => ({ ...f, delaySeconds: Math.max(0, Math.min(600, Math.floor(Number(e.target.value) || 0))) }))
-        }
-      />
-      <p className="field-hint">{t('groupLeave.form.delayHelp')}</p>
+      <label>{t('groupLeave.form.session')}</label>
+      <select
+        value={form.sessionId}
+        onChange={e => setForm(f => ({ ...f, sessionId: e.target.value, groupId: '', groupName: '' }))}
+      >
+        <option value="">{t('groupLeave.form.selectSession')}</option>
+        {sessions.map(s => (
+          <option key={s.id} value={s.id}>
+            {s.name}
+          </option>
+        ))}
+      </select>
     </>
   );
 
@@ -344,6 +334,39 @@ export function GroupLeave() {
       {groupsLoading && <p className="field-hint">{t('groupLeave.form.loadingGroups')}</p>}
       {groupsError && <p className="field-hint error">{t('groupLeave.form.groupsError')}</p>}
     </>
+  );
+
+  const renderDelayInput = () => (
+    <>
+      <label>{t('groupLeave.form.delay')}</label>
+      <input
+        type="number"
+        min={0}
+        max={600}
+        value={form.delaySeconds}
+        onChange={e =>
+          setForm(f => ({ ...f, delaySeconds: Math.max(0, Math.min(600, Math.floor(Number(e.target.value) || 0))) }))
+        }
+      />
+      <p className="field-hint">{t('groupLeave.form.delayHelp')}</p>
+    </>
+  );
+
+  const renderEnabledToggle = () => (
+    <div className="toggle-group">
+      <span className="toggle-label">{t('common.status')}</span>
+      <label className="toggle-switch">
+        <input
+          type="checkbox"
+          checked={form.enabled}
+          onChange={e => setForm(f => ({ ...f, enabled: e.target.checked }))}
+        />
+        <span className="toggle-slider"></span>
+      </label>
+      <span className={`toggle-status ${form.enabled ? 'active' : 'inactive'}`}>
+        {form.enabled ? t('common.active') : t('common.inactive')}
+      </span>
+    </div>
   );
 
   const renderMediaEditor = () => (
@@ -445,6 +468,17 @@ export function GroupLeave() {
     </>
   );
 
+  const renderToast = () =>
+    toast && (
+      <div className={`toast ${toast.type}`}>
+        {toast.type === 'success' ? <Check size={18} /> : <AlertTriangle size={18} />}
+        <span>{toast.message}</span>
+        <button className="toast-close" onClick={() => setToast(null)}>
+          <X size={16} />
+        </button>
+      </div>
+    );
+
   if (isLoading) {
     return (
       <div
@@ -456,17 +490,46 @@ export function GroupLeave() {
     );
   }
 
+  // ── Editor screen (full page, scrolls with the page) ───────────────────
+  if (editorOpen) {
+    return (
+      <div className="group-leave-page">
+        {renderToast()}
+        <PageHeader
+          title={editId ? t('groupLeave.editTitle') : t('groupLeave.createTitle')}
+          subtitle={t('groupLeave.subtitle')}
+          actions={
+            <button className="btn-secondary back-btn" onClick={closeEditor}>
+              <ArrowLeft size={16} /> {t('groupLeave.back')}
+            </button>
+          }
+        />
+        <div className="editor-card">
+          <div className="modal-body">
+            {renderEventSelect()}
+            {renderSessionSelect()}
+            {renderGroupSelect()}
+            {renderMediaEditor()}
+            {renderDelayInput()}
+            {renderEnabledToggle()}
+          </div>
+          <div className="editor-actions">
+            <button className="btn-secondary" onClick={closeEditor}>
+              {t('common.cancel')}
+            </button>
+            <button className="btn-primary" onClick={handleSave} disabled={!canSubmit}>
+              {editId ? t('webhooks.saveChanges') : t('common.create')}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── List screen ───────────────────────────────────────────────────────
   return (
     <div className="group-leave-page">
-      {toast && (
-        <div className={`toast ${toast.type}`}>
-          {toast.type === 'success' ? <Check size={18} /> : <AlertTriangle size={18} />}
-          <span>{toast.message}</span>
-          <button className="toast-close" onClick={() => setToast(null)}>
-            <X size={16} />
-          </button>
-        </div>
-      )}
+      {renderToast()}
 
       <PageHeader
         title={t('groupLeave.title')}
@@ -481,77 +544,6 @@ export function GroupLeave() {
         }
       />
 
-      {/* Create / Edit modal */}
-      {(showCreate || showEdit) && (
-        <div className="modal-overlay" onClick={closeModals}>
-          <div className="modal" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>{showEdit ? t('groupLeave.editTitle') : t('groupLeave.createTitle')}</h2>
-              <button className="btn-icon" onClick={closeModals}>
-                <X size={20} />
-              </button>
-            </div>
-            <div className="modal-body">
-              {renderEventSelect()}
-              {showEdit ? (
-                <>
-                  <label>{t('groupLeave.form.session')}</label>
-                  <div className="readonly-field">{sessionName(form.sessionId)}</div>
-                  <label>{t('groupLeave.form.group')}</label>
-                  <div className="readonly-field">{form.groupName || form.groupId}</div>
-                </>
-              ) : (
-                <>
-                  <label>{t('groupLeave.form.session')}</label>
-                  <select
-                    value={form.sessionId}
-                    onChange={e => setForm(f => ({ ...f, sessionId: e.target.value, groupId: '', groupName: '' }))}
-                  >
-                    <option value="">{t('groupLeave.form.selectSession')}</option>
-                    {sessions.map(s => (
-                      <option key={s.id} value={s.id}>
-                        {s.name}
-                      </option>
-                    ))}
-                  </select>
-                  {renderGroupSelect()}
-                </>
-              )}
-
-              {renderMediaEditor()}
-
-              {renderDelayInput()}
-
-              {showEdit && (
-                <div className="toggle-group">
-                  <span className="toggle-label">{t('common.status')}</span>
-                  <label className="toggle-switch">
-                    <input
-                      type="checkbox"
-                      checked={form.enabled}
-                      onChange={e => setForm(f => ({ ...f, enabled: e.target.checked }))}
-                    />
-                    <span className="toggle-slider"></span>
-                  </label>
-                  <span className={`toggle-status ${form.enabled ? 'active' : 'inactive'}`}>
-                    {form.enabled ? t('common.active') : t('common.inactive')}
-                  </span>
-                </div>
-              )}
-            </div>
-            <div className="modal-footer">
-              <button className="btn-secondary" onClick={closeModals}>
-                {t('common.cancel')}
-              </button>
-              <button className="btn-primary" onClick={showEdit ? handleEdit : handleCreate} disabled={!canSubmit}>
-                {showEdit ? t('webhooks.saveChanges') : t('common.create')}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Delete modal */}
       {showDelete && deleteTarget && (
         <div className="modal-overlay" onClick={() => setShowDelete(false)}>
           <div className="modal modal-sm" onClick={e => e.stopPropagation()}>
