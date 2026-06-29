@@ -14,7 +14,7 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiConsumes } from '@nestjs/swagger';
 import { GroupLeaveService } from './group-leave.service';
-import type { UploadedAudioFile } from './group-leave.service';
+import type { UploadedMediaFile } from './group-leave.service';
 import {
   CreateGroupLeaveRuleDto,
   UpdateGroupLeaveRuleDto,
@@ -25,8 +25,8 @@ import { GroupLeaveRule } from './entities/group-leave-rule.entity';
 import { RequireRole } from '../auth/decorators/auth.decorators';
 import { ApiKeyRole } from '../auth/entities/api-key.entity';
 
-// 16 MB — WhatsApp's audio message size limit.
-const MAX_AUDIO_BYTES = 16 * 1024 * 1024;
+// 16 MB upload cap (covers WhatsApp audio/video/image; documents are larger but capped here).
+const MAX_UPLOAD_BYTES = 16 * 1024 * 1024;
 
 @ApiTags('group-leave')
 @Controller('group-leave-rules')
@@ -48,14 +48,14 @@ export class GroupLeaveController {
     return this.service.create(dto);
   }
 
-  @Post('upload-audio')
+  @Post('upload-media')
   @RequireRole(ApiKeyRole.OPERATOR)
-  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: MAX_AUDIO_BYTES } }))
+  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: MAX_UPLOAD_BYTES } }))
   @ApiConsumes('multipart/form-data')
-  @ApiOperation({ summary: 'Upload an audio file for a group-leave rule' })
-  @ApiResponse({ status: 201, description: 'Stored audio descriptor', type: AudioUploadResponseDto })
-  async uploadAudio(@UploadedFile() file: UploadedAudioFile): Promise<AudioUploadResponseDto> {
-    return this.service.uploadAudio(file);
+  @ApiOperation({ summary: 'Upload a media file (audio/video/image/document) for a rule' })
+  @ApiResponse({ status: 201, description: 'Stored media descriptor', type: AudioUploadResponseDto })
+  async uploadMedia(@UploadedFile() file: UploadedMediaFile): Promise<AudioUploadResponseDto> {
+    return this.service.uploadMedia(file);
   }
 
   @Put(':id')

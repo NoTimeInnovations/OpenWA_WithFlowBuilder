@@ -3,15 +3,15 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as crypto from 'crypto';
 import * as path from 'path';
-import { GroupLeaveRule } from './entities/group-leave-rule.entity';
+import { GroupLeaveRule, RuleMediaItem, MediaKind } from './entities/group-leave-rule.entity';
 import { CreateGroupLeaveRuleDto, UpdateGroupLeaveRuleDto, GroupEvent, MAX_DELAY_SECONDS } from './dto';
 import { SessionService } from '../session/session.service';
 import { StorageService } from '../../common/storage/storage.service';
-import { MediaInput } from '../../engine/interfaces/whatsapp-engine.interface';
+import { MediaInput, IWhatsAppEngine, MessageResult } from '../../engine/interfaces/whatsapp-engine.interface';
 import { createLogger } from '../../common/services/logger.service';
 
 /** Shape of a multer in-memory upload (avoids a hard dependency on @types/multer). */
-export interface UploadedAudioFile {
+export interface UploadedMediaFile {
   buffer: Buffer;
   originalname: string;
   mimetype: string;
@@ -29,7 +29,30 @@ const MIME_EXTENSIONS: Record<string, string> = {
   'audio/mp4': '.m4a',
   'audio/aac': '.aac',
   'audio/x-m4a': '.m4a',
+  'video/mp4': '.mp4',
+  'video/quicktime': '.mov',
+  'video/3gpp': '.3gp',
+  'image/jpeg': '.jpg',
+  'image/png': '.png',
+  'image/webp': '.webp',
+  'image/gif': '.gif',
+  'application/pdf': '.pdf',
 };
+
+const DEFAULT_MIME: Record<MediaKind, string> = {
+  audio: 'audio/mpeg',
+  video: 'video/mp4',
+  image: 'image/jpeg',
+  document: 'application/octet-stream',
+};
+
+function kindFromMime(mimetype: string | undefined): MediaKind | null {
+  if (!mimetype) return null;
+  if (mimetype.startsWith('audio/')) return 'audio';
+  if (mimetype.startsWith('video/')) return 'video';
+  if (mimetype.startsWith('image/')) return 'image';
+  return 'document'; // everything else is sent as a document
+}
 
 @Injectable()
 export class GroupLeaveService {
@@ -60,14 +83,15 @@ export class GroupLeaveService {
   }
 
   async create(dto: CreateGroupLeaveRuleDto): Promise<GroupLeaveRule> {
-    if (!dto.audioUrl && !dto.audioStorageKey) {
-      throw new BadRequestException('Provide an audio URL or upload an audio file');
+    if (!(dto.media?.length ?? 0) && !dto.audioUrl && !dto.audioStorageKey) {
+      throw new BadRequestException('Add at least one media item (a URL or an uploaded file)');
     }
     const rule = this.ruleRepo.create({
       sessionId: dto.sessionId,
       event: dto.event ?? 'leave',
       groupId: dto.groupId,
       groupName: dto.groupName || null,
+      media: dto.media?.length ? dto.media : null,
       audioUrl: dto.audioUrl || null,
       audioStorageKey: dto.audioStorageKey || null,
       audioMimetype: dto.audioMimetype || null,
@@ -85,6 +109,7 @@ export class GroupLeaveService {
     if (dto.event !== undefined) rule.event = dto.event;
     if (dto.groupId !== undefined) rule.groupId = dto.groupId;
     if (dto.groupName !== undefined) rule.groupName = dto.groupName;
+    if (dto.media !== undefined) rule.media = dto.media.length ? dto.media : null;
     if (dto.audioUrl !== undefined) rule.audioUrl = dto.audioUrl || null;
     if (dto.audioStorageKey !== undefined) rule.audioStorageKey = dto.audioStorageKey || null;
     if (dto.audioMimetype !== undefined) rule.audioMimetype = dto.audioMimetype || null;
@@ -93,8 +118,8 @@ export class GroupLeaveService {
     if (dto.delaySeconds !== undefined) rule.delaySeconds = dto.delaySeconds;
     if (dto.enabled !== undefined) rule.enabled = dto.enabled;
 
-    if (!rule.audioUrl && !rule.audioStorageKey) {
-      throw new BadRequestException('A rule must have an audio URL or an uploaded audio file');
+    if (!(rule.media?.length ?? 0) && !rule.audioUrl && !rule.audioStorageKey) {
+      throw new BadRequestException('A rule must have at least one media item');
     }
 
     return this.ruleRepo.save(rule);
@@ -106,31 +131,34 @@ export class GroupLeaveService {
   }
 
   // ===========================================================================
-  // Audio upload (multipart) — persists via StorageService, returns a key
+  // Media upload (multipart) — persists via StorageService, returns a key + kind
   // ===========================================================================
 
-  async uploadAudio(file: UploadedAudioFile | undefined): Promise<{
+  async uploadMedia(file: UploadedMediaFile | undefined): Promise<{
     storageKey: string;
+    kind: MediaKind;
     mimetype: string;
     filename: string;
     size: number;
   }> {
     if (!file || !file.buffer?.length) {
-      throw new BadRequestException('No audio file uploaded');
+      throw new BadRequestException('No file uploaded');
     }
-    if (!file.mimetype?.startsWith('audio/')) {
-      throw new BadRequestException(`Unsupported file type '${file.mimetype}'. Please upload an audio file.`);
+    const kind = kindFromMime(file.mimetype);
+    if (!kind) {
+      throw new BadRequestException(`Unsupported file type '${file.mimetype}'.`);
     }
 
     const ext = path.extname(file.originalname || '') || MIME_EXTENSIONS[file.mimetype] || '';
     const storageKey = `group-leave/${crypto.randomUUID()}${ext}`;
     await this.storageService.putFile(storageKey, file.buffer);
 
-    this.logger.log(`Stored group-leave audio: ${storageKey} (${file.size} bytes)`);
+    this.logger.log(`Stored group media: ${storageKey} (${kind}, ${file.size} bytes)`);
     return {
       storageKey,
+      kind,
       mimetype: file.mimetype,
-      filename: file.originalname || `audio${ext}`,
+      filename: file.originalname || `file${ext}`,
       size: file.size,
     };
   }
@@ -174,16 +202,6 @@ export class GroupLeaveService {
     });
 
     for (const rule of rules) {
-      let media: MediaInput;
-      try {
-        media = await this.buildMedia(rule);
-      } catch (err) {
-        this.logger.error('Failed to load group audio', err instanceof Error ? err.message : String(err), {
-          ruleId: rule.id,
-        });
-        continue;
-      }
-
       // Optional per-rule delay before sending (capped; held in-memory).
       const delaySeconds = Math.min(Math.max(rule.delaySeconds ?? 0, 0), MAX_DELAY_SECONDS);
       if (delaySeconds > 0) {
@@ -197,16 +215,38 @@ export class GroupLeaveService {
         continue;
       }
 
+      let items: Array<{ kind: MediaKind; input: MediaInput }>;
+      try {
+        items = await this.resolveMediaItems(rule);
+      } catch (err) {
+        this.logger.error('Failed to load group media', err instanceof Error ? err.message : String(err), {
+          ruleId: rule.id,
+        });
+        continue;
+      }
+      if (items.length === 0) {
+        this.logger.warn('Rule has no usable media — skipping', { ruleId: rule.id });
+        continue;
+      }
+
+      // Send every item, in order, to every recipient.
       for (const recipient of recipients) {
-        try {
-          await sendEngine.sendAudioMessage(recipient, media);
-          this.logger.log(`Sent group-${event} audio to ${recipient}`, { sessionId, groupId, event, ruleId: rule.id });
-        } catch (err) {
-          this.logger.error(
-            `Failed to send group-${event} audio to ${recipient}`,
-            err instanceof Error ? err.message : String(err),
-            { sessionId, groupId, event, ruleId: rule.id },
-          );
+        for (const { kind, input } of items) {
+          try {
+            await this.sendItem(sendEngine, kind, recipient, input);
+            this.logger.log(`Sent group-${event} ${kind} to ${recipient}`, {
+              sessionId,
+              groupId,
+              event,
+              ruleId: rule.id,
+            });
+          } catch (err) {
+            this.logger.error(
+              `Failed to send group-${event} ${kind} to ${recipient}`,
+              err instanceof Error ? err.message : String(err),
+              { sessionId, groupId, event, ruleId: rule.id },
+            );
+          }
         }
       }
 
@@ -217,20 +257,65 @@ export class GroupLeaveService {
     }
   }
 
-  private async buildMedia(rule: GroupLeaveRule): Promise<MediaInput> {
-    const asVoice = rule.sendAsVoice;
-    if (rule.audioStorageKey) {
-      const data = await this.storageService.getFile(rule.audioStorageKey);
-      return {
-        mimetype: rule.audioMimetype || 'audio/mpeg',
-        data,
-        filename: rule.audioFilename || undefined,
-        asVoice,
-      };
+  /** Build the ordered media items for a rule (new media[] or the legacy single-audio fallback). */
+  private async resolveMediaItems(rule: GroupLeaveRule): Promise<Array<{ kind: MediaKind; input: MediaInput }>> {
+    const source: RuleMediaItem[] = rule.media?.length ? rule.media : this.legacyMediaItems(rule);
+    const out: Array<{ kind: MediaKind; input: MediaInput }> = [];
+    for (const item of source) {
+      const input = await this.toMediaInput(item);
+      if (input) out.push({ kind: item.kind, input });
     }
-    if (rule.audioUrl) {
-      return { mimetype: rule.audioMimetype || 'audio/mpeg', data: rule.audioUrl, asVoice };
+    return out;
+  }
+
+  private legacyMediaItems(rule: GroupLeaveRule): RuleMediaItem[] {
+    if (!rule.audioStorageKey && !rule.audioUrl) return [];
+    return [
+      {
+        kind: 'audio',
+        url: rule.audioUrl,
+        storageKey: rule.audioStorageKey,
+        mimetype: rule.audioMimetype,
+        filename: rule.audioFilename,
+        asVoice: rule.sendAsVoice,
+      },
+    ];
+  }
+
+  private async toMediaInput(item: RuleMediaItem): Promise<MediaInput | null> {
+    let data: Buffer | string;
+    if (item.storageKey) {
+      data = await this.storageService.getFile(item.storageKey);
+    } else if (item.url) {
+      data = item.url;
+    } else {
+      return null;
     }
-    throw new Error('Rule has no audio configured');
+    return {
+      mimetype: item.mimetype || DEFAULT_MIME[item.kind],
+      data,
+      filename: item.filename || undefined,
+      caption: item.caption || undefined,
+      asVoice: item.kind === 'audio' ? (item.asVoice ?? true) : undefined,
+    };
+  }
+
+  private sendItem(
+    engine: IWhatsAppEngine,
+    kind: MediaKind,
+    recipient: string,
+    input: MediaInput,
+  ): Promise<MessageResult> {
+    switch (kind) {
+      case 'image':
+        return engine.sendImageMessage(recipient, input);
+      case 'video':
+        return engine.sendVideoMessage(recipient, input);
+      case 'document':
+        return engine.sendDocumentMessage(recipient, input);
+      case 'audio':
+      default:
+        return engine.sendAudioMessage(recipient, input);
+    }
   }
 }

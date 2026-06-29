@@ -10,12 +10,25 @@ import {
 } from 'typeorm';
 import { Session } from '../../session/entities/session.entity';
 import { DateTransformer } from '../../../common/transformers/date.transformer';
-import { dateColumnType } from '../../../common/utils/column-types';
+import { dateColumnType, jsonColumnType } from '../../../common/utils/column-types';
+
+export type MediaKind = 'audio' | 'video' | 'image' | 'document';
+
+/** One media attachment a rule sends (provided as a URL or an uploaded file). */
+export interface RuleMediaItem {
+  kind: MediaKind;
+  url?: string | null;
+  storageKey?: string | null;
+  mimetype?: string | null;
+  filename?: string | null;
+  caption?: string | null; // image/video/document
+  asVoice?: boolean; // audio → send as voice note (PTT)
+}
 
 /**
- * A rule that plays a goodbye audio to whoever leaves (or is removed from) a
- * watched group. When `group_leave` fires for `groupId` on `sessionId`, the
- * configured audio is sent as a 1:1 message to each participant who left.
+ * A rule that sends one or more media files to whoever joins or leaves a
+ * watched group. When the configured `event` fires for `groupId` on
+ * `sessionId`, each item in `media` is sent as a 1:1 message (after `delaySeconds`).
  */
 @Entity('group_leave_rules')
 @Index(['sessionId', 'groupId'])
@@ -42,11 +55,14 @@ export class GroupLeaveRule {
   @Column({ type: 'varchar', length: 512, nullable: true })
   groupName: string | null;
 
-  /** Audio provided as a public URL (alternative to an uploaded file) */
+  /** Ordered media items to send (the source of truth; legacy audio* fields below are a fallback) */
+  @Column({ type: jsonColumnType(), nullable: true })
+  media: RuleMediaItem[] | null;
+
+  /** @deprecated Legacy single-audio fields, kept for rules created before multi-media */
   @Column({ type: 'varchar', length: 2048, nullable: true })
   audioUrl: string | null;
 
-  /** Storage key for an uploaded audio file (read back via StorageService) */
   @Column({ type: 'varchar', length: 512, nullable: true })
   audioStorageKey: string | null;
 

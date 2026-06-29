@@ -66,8 +66,8 @@
     "groupLeave": "Group Join / Leave"
   },
   "groupLeave": {
-    "title": "Group Join / Leave Audio",
-    "subtitle": "Send an audio when someone joins or leaves a watched group",
+    "title": "Group Join / Leave Media",
+    "subtitle": "Send one or more files when someone joins or leaves a watched group",
     "addRule": "Add Rule",
     "createTitle": "New Join / Leave Rule",
     "editTitle": "Edit Join / Leave Rule",
@@ -77,8 +77,7 @@
       "event": "Event",
       "group": "Group",
       "session": "Session",
-      "audio": "Audio",
-      "delivery": "Delivery",
+      "media": "Media",
       "status": "Status",
       "actions": "Actions"
     },
@@ -99,24 +98,28 @@
       "typeCommunityGroup": "Community group",
       "typeGroup": "Group",
       "members": "{{count}} members",
-      "audio": "Audio",
-      "audioUrlMode": "Use URL",
-      "audioUploadMode": "Upload file",
-      "chooseFile": "Choose an audio file",
+      "media": "Media to send",
+      "noMedia": "No media yet — upload files or add a URL.",
+      "addFile": "Upload files",
+      "addUrl": "Add URL",
+      "uploadedFile": "Uploaded file",
+      "captionPlaceholder": "Optional caption",
+      "kindAudio": "Audio",
+      "kindVideo": "Video",
+      "kindImage": "Image",
+      "kindDocument": "Document",
       "uploading": "Uploading…",
-      "sendAsVoice": "Send as voice note",
-      "voiceNote": "Voice note",
-      "audioFile": "Audio file"
+      "sendAsVoice": "Send as voice note"
     },
     "empty": {
       "title": "No rules yet",
-      "description": "Add a rule to play an audio when someone joins or leaves a group."
+      "description": "Add a rule to send media when someone joins or leaves a group."
     },
     "toasts": {
       "created": "Rule created",
       "updated": "Rule updated",
       "deleted": "Rule deleted",
-      "uploaded": "Audio uploaded",
+      "uploaded": "Media uploaded",
       "createFailed": "Failed to create rule: {{message}}",
       "updateFailed": "Failed to update rule: {{message}}",
       "deleteFailed": "Failed to delete rule: {{message}}",

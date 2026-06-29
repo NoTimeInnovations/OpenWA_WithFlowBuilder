@@ -565,6 +565,17 @@ export const pluginsApi = {
 // =============================================================================
 
 export type GroupEvent = 'join' | 'leave';
+export type MediaKind = 'audio' | 'video' | 'image' | 'document';
+
+export interface RuleMediaItem {
+  kind: MediaKind;
+  url?: string | null;
+  storageKey?: string | null;
+  mimetype?: string | null;
+  filename?: string | null;
+  caption?: string | null;
+  asVoice?: boolean;
+}
 
 export interface GroupLeaveRule {
   id: string;
@@ -572,6 +583,8 @@ export interface GroupLeaveRule {
   event: GroupEvent;
   groupId: string;
   groupName?: string | null;
+  media?: RuleMediaItem[] | null;
+  // Legacy single-audio fields (rules created before multi-media)
   audioUrl?: string | null;
   audioStorageKey?: string | null;
   audioMimetype?: string | null;
@@ -584,8 +597,9 @@ export interface GroupLeaveRule {
   updatedAt: string;
 }
 
-export interface AudioUploadResult {
+export interface MediaUploadResult {
   storageKey: string;
+  kind: MediaKind;
   mimetype: string;
   filename: string;
   size: number;
@@ -596,21 +610,17 @@ export interface CreateGroupLeaveRulePayload {
   event?: GroupEvent;
   groupId: string;
   groupName?: string;
-  audioUrl?: string;
-  audioStorageKey?: string;
-  audioMimetype?: string;
-  audioFilename?: string;
-  sendAsVoice?: boolean;
+  media?: RuleMediaItem[];
   delaySeconds?: number;
   enabled?: boolean;
 }
 
-// Upload an audio file via multipart/form-data (request() only handles JSON).
-async function uploadGroupLeaveAudio(file: File): Promise<AudioUploadResult> {
+// Upload a media file via multipart/form-data (request() only handles JSON).
+async function uploadGroupLeaveMedia(file: File): Promise<MediaUploadResult> {
   const apiKey = sessionStorage.getItem('openwa_api_key');
   const form = new FormData();
   form.append('file', file);
-  const response = await fetch(`${API_BASE_URL}/group-leave-rules/upload-audio`, {
+  const response = await fetch(`${API_BASE_URL}/group-leave-rules/upload-media`, {
     method: 'POST',
     headers: { ...(apiKey ? { 'X-API-Key': apiKey } : {}) },
     body: form,
@@ -629,5 +639,5 @@ export const groupLeaveApi = {
   update: (id: string, data: Partial<CreateGroupLeaveRulePayload>) =>
     request<GroupLeaveRule>(`/group-leave-rules/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   delete: (id: string) => request<void>(`/group-leave-rules/${id}`, { method: 'DELETE' }),
-  uploadAudio: (file: File) => uploadGroupLeaveAudio(file),
+  uploadMedia: (file: File) => uploadGroupLeaveMedia(file),
 };

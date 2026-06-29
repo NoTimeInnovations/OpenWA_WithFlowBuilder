@@ -11,9 +11,14 @@ import {
   UserMinus,
   Upload,
   Link as LinkIcon,
-  Volume2,
 } from 'lucide-react';
-import { type GroupLeaveRule, type WaGroup, type GroupEvent, groupLeaveApi } from '../services/api';
+import {
+  type GroupLeaveRule,
+  type WaGroup,
+  type GroupEvent,
+  type MediaKind,
+  groupLeaveApi,
+} from '../services/api';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { useRole } from '../hooks/useRole';
 import {
@@ -27,19 +32,22 @@ import {
 import { PageHeader } from '../components/PageHeader';
 import './GroupLeave.css';
 
-type AudioMode = 'url' | 'upload';
+interface MediaItemForm {
+  kind: MediaKind;
+  url?: string;
+  storageKey?: string;
+  mimetype?: string;
+  filename?: string;
+  caption?: string;
+  asVoice?: boolean;
+}
 
 interface RuleForm {
   sessionId: string;
   event: GroupEvent;
   groupId: string;
   groupName: string;
-  audioMode: AudioMode;
-  audioUrl: string;
-  audioStorageKey: string;
-  audioMimetype: string;
-  audioFilename: string;
-  sendAsVoice: boolean;
+  media: MediaItemForm[];
   delaySeconds: number;
   enabled: boolean;
 }
@@ -49,15 +57,38 @@ const emptyForm: RuleForm = {
   event: 'leave',
   groupId: '',
   groupName: '',
-  audioMode: 'url',
-  audioUrl: '',
-  audioStorageKey: '',
-  audioMimetype: '',
-  audioFilename: '',
-  sendAsVoice: true,
+  media: [],
   delaySeconds: 0,
   enabled: true,
 };
+
+// Map a rule's stored media (or legacy single-audio fields) into editable form items.
+function ruleToMediaForm(rule: GroupLeaveRule): MediaItemForm[] {
+  if (rule.media?.length) {
+    return rule.media.map(m => ({
+      kind: m.kind,
+      url: m.url || undefined,
+      storageKey: m.storageKey || undefined,
+      mimetype: m.mimetype || undefined,
+      filename: m.filename || undefined,
+      caption: m.caption || undefined,
+      asVoice: m.asVoice,
+    }));
+  }
+  if (rule.audioStorageKey || rule.audioUrl) {
+    return [
+      {
+        kind: 'audio',
+        url: rule.audioUrl || undefined,
+        storageKey: rule.audioStorageKey || undefined,
+        mimetype: rule.audioMimetype || undefined,
+        filename: rule.audioFilename || undefined,
+        asVoice: rule.sendAsVoice,
+      },
+    ];
+  }
+  return [];
+}
 
 export function GroupLeave() {
   const { t } = useTranslation();
@@ -79,7 +110,6 @@ export function GroupLeave() {
   const [uploading, setUploading] = useState(false);
   const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
-  // Groups for the session selected in the open modal (only fetched while a modal is open).
   const {
     data: groups = [],
     isError: groupsError,
@@ -95,7 +125,6 @@ export function GroupLeave() {
 
   const sessionName = (id: string) => sessions.find(s => s.id === id)?.name || id.substring(0, 8);
 
-  // Disambiguate same-named groups: show type (Community vs Group) + member count.
   const groupLabel = (g: WaGroup): string => {
     const type = g.isCommunity
       ? t('groupLeave.form.typeCommunity')
@@ -103,10 +132,18 @@ export function GroupLeave() {
         ? t('groupLeave.form.typeCommunityGroup')
         : t('groupLeave.form.typeGroup');
     const parts = [type];
-    if (typeof g.participantsCount === 'number') {
-      parts.push(t('groupLeave.form.members', { count: g.participantsCount }));
-    }
+    if (typeof g.participantsCount === 'number') parts.push(t('groupLeave.form.members', { count: g.participantsCount }));
     return `${g.name || g.id} — ${parts.join(' · ')}`;
+  };
+
+  const mediaSummary = (rule: GroupLeaveRule): string => {
+    const items = ruleToMediaForm(rule);
+    if (items.length === 0) return '—';
+    const counts: Partial<Record<MediaKind, number>> = {};
+    items.forEach(m => {
+      counts[m.kind] = (counts[m.kind] || 0) + 1;
+    });
+    return (Object.entries(counts) as [MediaKind, number][]).map(([k, n]) => `${n} ${k}`).join(', ');
   };
 
   const openCreate = () => {
@@ -121,12 +158,7 @@ export function GroupLeave() {
       event: rule.event,
       groupId: rule.groupId,
       groupName: rule.groupName || '',
-      audioMode: rule.audioStorageKey ? 'upload' : 'url',
-      audioUrl: rule.audioUrl || '',
-      audioStorageKey: rule.audioStorageKey || '',
-      audioMimetype: rule.audioMimetype || '',
-      audioFilename: rule.audioFilename || '',
-      sendAsVoice: rule.sendAsVoice,
+      media: ruleToMediaForm(rule),
       delaySeconds: rule.delaySeconds,
       enabled: rule.enabled,
     });
@@ -140,18 +172,35 @@ export function GroupLeave() {
     setForm(emptyForm);
   };
 
-  const handleFile = async (file: File | undefined) => {
-    if (!file) return;
+  // ── media item helpers ───────────────────────────────────────────────
+  const addUrlItem = () =>
+    setForm(f => ({ ...f, media: [...f.media, { kind: 'audio', url: '', asVoice: true }] }));
+
+  const updateItem = (index: number, patch: Partial<MediaItemForm>) =>
+    setForm(f => ({ ...f, media: f.media.map((m, i) => (i === index ? { ...m, ...patch } : m)) }));
+
+  const removeItem = (index: number) => setForm(f => ({ ...f, media: f.media.filter((_, i) => i !== index) }));
+
+  const handleFiles = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
     setUploading(true);
     try {
-      const res = await groupLeaveApi.uploadAudio(file);
-      setForm(f => ({
-        ...f,
-        audioStorageKey: res.storageKey,
-        audioMimetype: res.mimetype,
-        audioFilename: res.filename,
-        audioUrl: '',
-      }));
+      for (const file of Array.from(files)) {
+        const res = await groupLeaveApi.uploadMedia(file);
+        setForm(f => ({
+          ...f,
+          media: [
+            ...f.media,
+            {
+              kind: res.kind,
+              storageKey: res.storageKey,
+              mimetype: res.mimetype,
+              filename: res.filename,
+              asVoice: res.kind === 'audio',
+            },
+          ],
+        }));
+      }
       setToast({ type: 'success', message: t('groupLeave.toasts.uploaded') });
     } catch (err) {
       setToast({
@@ -165,34 +214,25 @@ export function GroupLeave() {
     }
   };
 
-  // Shared rule fields WITHOUT sessionId (the update DTO rejects sessionId; create adds it).
-  const buildPayload = () => {
-    const base = {
-      event: form.event,
-      groupId: form.groupId,
-      groupName: form.groupName || undefined,
-      sendAsVoice: form.sendAsVoice,
-      delaySeconds: form.delaySeconds,
-      enabled: form.enabled,
-    };
-    if (form.audioMode === 'upload') {
-      return {
-        ...base,
-        audioStorageKey: form.audioStorageKey,
-        audioMimetype: form.audioMimetype || undefined,
-        audioFilename: form.audioFilename || undefined,
-        audioUrl: '',
-      };
-    }
-    return {
-      ...base,
-      audioUrl: form.audioUrl.trim(),
-      audioStorageKey: '',
-    };
-  };
+  const buildPayload = () => ({
+    event: form.event,
+    groupId: form.groupId,
+    groupName: form.groupName || undefined,
+    delaySeconds: form.delaySeconds,
+    enabled: form.enabled,
+    media: form.media.map(m => ({
+      kind: m.kind,
+      url: m.storageKey ? undefined : m.url?.trim() || undefined,
+      storageKey: m.storageKey || undefined,
+      mimetype: m.mimetype || undefined,
+      filename: m.filename || undefined,
+      caption: m.kind === 'audio' ? undefined : m.caption || undefined,
+      asVoice: m.kind === 'audio' ? (m.asVoice ?? true) : undefined,
+    })),
+  });
 
-  const hasAudio = form.audioMode === 'upload' ? !!form.audioStorageKey : !!form.audioUrl.trim();
-  const canSubmit = !!form.sessionId && !!form.groupId && hasAudio && !uploading;
+  const hasMedia = form.media.length > 0 && form.media.every(m => m.storageKey || (m.url && m.url.trim()));
+  const canSubmit = !!form.sessionId && !!form.groupId && hasMedia && !uploading;
 
   const handleCreate = async () => {
     if (!canSubmit) return;
@@ -243,78 +283,6 @@ export function GroupLeave() {
     }
   };
 
-  const audioLabel = (rule: GroupLeaveRule) =>
-    rule.audioFilename || rule.audioUrl || rule.audioStorageKey || '—';
-
-  const renderAudioFields = () => (
-    <>
-      <label>{t('groupLeave.form.audio')}</label>
-      <div className="audio-mode-toggle">
-        <button
-          type="button"
-          className={form.audioMode === 'url' ? 'active' : ''}
-          onClick={() => setForm(f => ({ ...f, audioMode: 'url' }))}
-        >
-          <LinkIcon size={14} /> {t('groupLeave.form.audioUrlMode')}
-        </button>
-        <button
-          type="button"
-          className={form.audioMode === 'upload' ? 'active' : ''}
-          onClick={() => setForm(f => ({ ...f, audioMode: 'upload' }))}
-        >
-          <Upload size={14} /> {t('groupLeave.form.audioUploadMode')}
-        </button>
-      </div>
-
-      {form.audioMode === 'url' ? (
-        <input
-          type="url"
-          placeholder="https://…/goodbye.mp3"
-          value={form.audioUrl}
-          onChange={e => setForm(f => ({ ...f, audioUrl: e.target.value }))}
-        />
-      ) : (
-        <div className="audio-upload">
-          <label className="file-drop">
-            <input
-              type="file"
-              accept="audio/*"
-              hidden
-              onChange={e => {
-                void handleFile(e.target.files?.[0]);
-                e.target.value = '';
-              }}
-            />
-            {uploading ? (
-              <>
-                <Loader2 size={16} className="animate-spin" /> {t('groupLeave.form.uploading')}
-              </>
-            ) : (
-              <>
-                <Upload size={16} /> {form.audioFilename || t('groupLeave.form.chooseFile')}
-              </>
-            )}
-          </label>
-        </div>
-      )}
-
-      <div className="toggle-group">
-        <span className="toggle-label">{t('groupLeave.form.sendAsVoice')}</span>
-        <label className="toggle-switch">
-          <input
-            type="checkbox"
-            checked={form.sendAsVoice}
-            onChange={e => setForm(f => ({ ...f, sendAsVoice: e.target.checked }))}
-          />
-          <span className="toggle-slider"></span>
-        </label>
-        <span className="toggle-status active">
-          {form.sendAsVoice ? t('groupLeave.form.voiceNote') : t('groupLeave.form.audioFile')}
-        </span>
-      </div>
-    </>
-  );
-
   const renderEventSelect = () => (
     <>
       <label>{t('groupLeave.form.event')}</label>
@@ -364,6 +332,91 @@ export function GroupLeave() {
       </select>
       {groupsLoading && <p className="field-hint">{t('groupLeave.form.loadingGroups')}</p>}
       {groupsError && <p className="field-hint error">{t('groupLeave.form.groupsError')}</p>}
+    </>
+  );
+
+  const renderMediaEditor = () => (
+    <>
+      <label>{t('groupLeave.form.media')}</label>
+      {form.media.length === 0 && <p className="field-hint">{t('groupLeave.form.noMedia')}</p>}
+      <div className="media-list">
+        {form.media.map((m, i) => (
+          <div key={i} className="media-item">
+            <div className="media-item-head">
+              <select
+                className="media-kind"
+                value={m.kind}
+                onChange={e => updateItem(i, { kind: e.target.value as MediaKind })}
+              >
+                <option value="audio">{t('groupLeave.form.kindAudio')}</option>
+                <option value="video">{t('groupLeave.form.kindVideo')}</option>
+                <option value="image">{t('groupLeave.form.kindImage')}</option>
+                <option value="document">{t('groupLeave.form.kindDocument')}</option>
+              </select>
+              {m.storageKey ? (
+                <span className="media-file" title={m.filename || ''}>
+                  {m.filename || t('groupLeave.form.uploadedFile')}
+                </span>
+              ) : (
+                <input
+                  className="media-url"
+                  type="url"
+                  placeholder="https://…"
+                  value={m.url || ''}
+                  onChange={e => updateItem(i, { url: e.target.value })}
+                />
+              )}
+              <button type="button" className="icon-btn danger" title={t('common.delete')} onClick={() => removeItem(i)}>
+                <X size={14} />
+              </button>
+            </div>
+            {m.kind === 'audio' ? (
+              <label className="media-voice">
+                <input
+                  type="checkbox"
+                  checked={m.asVoice ?? true}
+                  onChange={e => updateItem(i, { asVoice: e.target.checked })}
+                />
+                {t('groupLeave.form.sendAsVoice')}
+              </label>
+            ) : (
+              <input
+                className="media-caption"
+                type="text"
+                placeholder={t('groupLeave.form.captionPlaceholder')}
+                value={m.caption || ''}
+                onChange={e => updateItem(i, { caption: e.target.value })}
+              />
+            )}
+          </div>
+        ))}
+      </div>
+      <div className="media-actions">
+        <label className="btn-secondary file-btn">
+          {uploading ? (
+            <>
+              <Loader2 size={14} className="animate-spin" /> {t('groupLeave.form.uploading')}
+            </>
+          ) : (
+            <>
+              <Upload size={14} /> {t('groupLeave.form.addFile')}
+            </>
+          )}
+          <input
+            type="file"
+            accept="audio/*,video/*,image/*"
+            multiple
+            hidden
+            onChange={e => {
+              void handleFiles(e.target.files);
+              e.target.value = '';
+            }}
+          />
+        </label>
+        <button type="button" className="btn-secondary" onClick={addUrlItem}>
+          <LinkIcon size={14} /> {t('groupLeave.form.addUrl')}
+        </button>
+      </div>
     </>
   );
 
@@ -427,9 +480,7 @@ export function GroupLeave() {
                   <label>{t('groupLeave.form.session')}</label>
                   <select
                     value={form.sessionId}
-                    onChange={e =>
-                      setForm(f => ({ ...f, sessionId: e.target.value, groupId: '', groupName: '' }))
-                    }
+                    onChange={e => setForm(f => ({ ...f, sessionId: e.target.value, groupId: '', groupName: '' }))}
                   >
                     <option value="">{t('groupLeave.form.selectSession')}</option>
                     {sessions.map(s => (
@@ -442,7 +493,7 @@ export function GroupLeave() {
                 </>
               )}
 
-              {renderAudioFields()}
+              {renderMediaEditor()}
 
               {renderDelayInput()}
 
@@ -467,11 +518,7 @@ export function GroupLeave() {
               <button className="btn-secondary" onClick={closeModals}>
                 {t('common.cancel')}
               </button>
-              <button
-                className="btn-primary"
-                onClick={showEdit ? handleEdit : handleCreate}
-                disabled={!canSubmit}
-              >
+              <button className="btn-primary" onClick={showEdit ? handleEdit : handleCreate} disabled={!canSubmit}>
                 {showEdit ? t('webhooks.saveChanges') : t('common.create')}
               </button>
             </div>
@@ -511,8 +558,7 @@ export function GroupLeave() {
             <span>{t('groupLeave.columns.event')}</span>
             <span>{t('groupLeave.columns.group')}</span>
             <span>{t('groupLeave.columns.session')}</span>
-            <span>{t('groupLeave.columns.audio')}</span>
-            <span>{t('groupLeave.columns.delivery')}</span>
+            <span>{t('groupLeave.columns.media')}</span>
             <span>{t('groupLeave.columns.status')}</span>
             <span>{t('groupLeave.columns.actions')}</span>
           </div>
@@ -532,14 +578,8 @@ export function GroupLeave() {
                 </span>
                 <span className="group-cell">{rule.groupName || rule.groupId}</span>
                 <span>{sessionName(rule.sessionId)}</span>
-                <span className="audio-cell">
-                  <code title={audioLabel(rule)}>{audioLabel(rule)}</code>
-                </span>
-                <span>
-                  <span className="delivery-badge">
-                    <Volume2 size={13} />
-                    {rule.sendAsVoice ? t('groupLeave.form.voiceNote') : t('groupLeave.form.audioFile')}
-                  </span>
+                <span className="media-cell">
+                  {mediaSummary(rule)}
                   {rule.delaySeconds > 0 && (
                     <span className="delay-tag">{t('groupLeave.form.delayTag', { count: rule.delaySeconds })}</span>
                   )}

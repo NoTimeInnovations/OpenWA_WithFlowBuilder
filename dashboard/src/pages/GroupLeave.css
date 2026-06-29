@@ -17,17 +17,22 @@
   display: flex;
   flex-direction: column;
   width: 100%;
-  min-width: 820px;
+  min-width: 760px;
   font-size: 0.875rem;
 }
 
 .group-leave-table .table-row {
   display: grid;
-  grid-template-columns: 84px 1.3fr 0.9fr 1.3fr 150px 80px 84px;
+  grid-template-columns: 84px 1.3fr 0.9fr 1.4fr 80px 84px;
   gap: 0.75rem;
   padding: 0.875rem 1.25rem;
   align-items: center;
   border-bottom: 1px solid var(--border);
+}
+
+.media-cell {
+  text-transform: capitalize;
+  color: var(--text-secondary);
 }
 
 .event-badge {
@@ -225,6 +230,92 @@
 
 .field-hint.error {
   color: #dc2626;
+}
+
+/* Media list editor */
+.media-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.media-item {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.6rem 0.75rem;
+  background: var(--bg-light);
+}
+
+.media-item-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.group-leave-page .modal-body .media-kind {
+  width: auto;
+  min-width: 110px;
+  flex-shrink: 0;
+  margin-bottom: 0;
+}
+
+.group-leave-page .modal-body .media-url {
+  width: auto;
+  flex: 1;
+  min-width: 0;
+}
+
+.media-file {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 0.4rem 0.6rem;
+  background: var(--bg-white);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
+.media-item .icon-btn {
+  flex-shrink: 0;
+  padding: 0.4rem;
+}
+
+.group-leave-page .modal-body .media-caption {
+  width: 100%;
+  margin-top: 0.5rem;
+}
+
+.group-leave-page .modal-body label.media-voice {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0.5rem 0 0;
+  font-size: 0.8125rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.media-voice input {
+  width: auto;
+}
+
+.media-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.group-leave-page .modal-body .media-actions .btn-secondary,
+.group-leave-page .modal-body .media-actions .file-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-top: 0;
+  cursor: pointer;
 }
 
 /* Audio source toggle */
