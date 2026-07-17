@@ -38,6 +38,20 @@ export class MessageController {
     });
   }
 
+  @Get('history')
+  @ApiOperation({ summary: 'Fetch live WhatsApp chat history from the device (not the DB)' })
+  @ApiParam({ name: 'sessionId', description: 'Session ID' })
+  @ApiQuery({ name: 'chatId', required: true, description: 'Chat ID (e.g. 628xxx@c.us or <lid>@lid)' })
+  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Max messages (default 50)' })
+  @ApiResponse({ status: 200, description: 'Live chat history' })
+  async getChatHistory(
+    @Param('sessionId') sessionId: string,
+    @Query('chatId') chatId: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.messageService.getChatHistory(sessionId, chatId, limit ? parseInt(limit, 10) : 50);
+  }
+
   @Post('send-text')
   @RequireRole(ApiKeyRole.OPERATOR)
   @ApiOperation({ summary: 'Send a text message' })

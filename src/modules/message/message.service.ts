@@ -229,6 +229,21 @@ export class MessageService {
     return { messages, total };
   }
 
+  // Live WhatsApp chat history from the device (not the DB). Read-only.
+  async getChatHistory(
+    sessionId: string,
+    chatId: string,
+    limit = 50,
+  ): Promise<Array<{ id: string; body: string; type: string; timestamp: number; fromMe: boolean; hasMedia: boolean }>> {
+    const engine = this.getEngine(sessionId) as unknown as {
+      fetchChatHistory?: (chatId: string, limit: number) => Promise<any[]>;
+    };
+    if (typeof engine.fetchChatHistory !== 'function') {
+      throw new Error('Engine does not support chat history');
+    }
+    return engine.fetchChatHistory(chatId, limit);
+  }
+
   // ========== Phase 3: Extended Messaging ==========
 
   async sendLocation(
