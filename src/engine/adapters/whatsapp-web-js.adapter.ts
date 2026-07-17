@@ -323,7 +323,13 @@ export class WhatsAppWebJsAdapter extends EventEmitter implements IWhatsAppEngin
 
   async sendTextMessage(chatId: string, text: string): Promise<MessageResult> {
     this.ensureReady();
-    const msg = await this.client!.sendMessage(chatId, text);
+    // Resolve @lid → phone JID (wwjs can return no message object when sending
+    // to a raw @lid, which used to crash the caller reading msg.id).
+    const targetId = await this.resolveRecipientId(chatId);
+    const msg = await this.client!.sendMessage(targetId, text);
+    if (!msg?.id) {
+      throw new Error(`sendMessage returned no message for ${targetId}`);
+    }
     return {
       id: msg.id._serialized,
       timestamp: msg.timestamp,
@@ -374,6 +380,9 @@ export class WhatsAppWebJsAdapter extends EventEmitter implements IWhatsAppEngin
       sendAudioAsVoice: media.asVoice,
     });
 
+    if (!msg?.id) {
+      throw new Error(`sendMessage returned no message for ${targetId}`);
+    }
     return {
       id: msg.id._serialized,
       timestamp: msg.timestamp,
@@ -518,7 +527,8 @@ export class WhatsAppWebJsAdapter extends EventEmitter implements IWhatsAppEngin
       name: location.description || '',
       address: location.address || '',
     });
-    const msg = await this.client!.sendMessage(chatId, loc);
+    const targetId = await this.resolveRecipientId(chatId);
+    const msg = await this.client!.sendMessage(targetId, loc);
     return {
       id: msg.id._serialized,
       timestamp: msg.timestamp,
@@ -536,7 +546,8 @@ export class WhatsAppWebJsAdapter extends EventEmitter implements IWhatsAppEngin
       'END:VCARD',
     ].join('\n');
 
-    const msg = await this.client!.sendMessage(chatId, vcard, {
+    const targetId = await this.resolveRecipientId(chatId);
+    const msg = await this.client!.sendMessage(targetId, vcard, {
       parseVCards: true,
     });
     return {
@@ -559,13 +570,47 @@ export class WhatsAppWebJsAdapter extends EventEmitter implements IWhatsAppEngin
       messageMedia = new MessageMedia(media.mimetype, media.data.toString('base64'), media.filename);
     }
 
-    const msg = await this.client!.sendMessage(chatId, messageMedia, {
+    const targetId = await this.resolveRecipientId(chatId);
+    const msg = await this.client!.sendMessage(targetId, messageMedia, {
       sendMediaAsSticker: true,
     });
     return {
       id: msg.id._serialized,
       timestamp: msg.timestamp,
     };
+  }
+
+  // Fetch live WhatsApp history for a chat straight from the device session
+  // (the message DB only holds outbound). Read-only.
+  async fetchChatHistory(
+    chatId: string,
+    limit = 50,
+  ): Promise<Array<{ id: string; body: string; type: string; timestamp: number; fromMe: boolean; hasMedia: boolean }>> {
+    this.ensureReady();
+    // LID chats often can't be fetched via getChatById directly; fall back to
+    // resolving the contact (handles LID) and reading its chat. Returns [] if
+    // the chat truly can't be found.
+    let chat: any = null;
+    try {
+      chat = await this.client!.getChatById(chatId);
+    } catch {
+      try {
+        const contact: any = await this.client!.getContactById(chatId);
+        chat = contact ? await contact.getChat() : null;
+      } catch {
+        chat = null;
+      }
+    }
+    if (!chat) return [];
+    const messages = await chat.fetchMessages({ limit });
+    return messages.map((m: any) => ({
+      id: m.id._serialized,
+      body: m.body || '',
+      type: m.type,
+      timestamp: m.timestamp,
+      fromMe: m.fromMe,
+      hasMedia: m.hasMedia,
+    }));
   }
 
   async replyToMessage(chatId: string, quotedMsgId: string, text: string): Promise<MessageResult> {
