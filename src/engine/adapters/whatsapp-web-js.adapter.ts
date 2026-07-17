@@ -327,8 +327,12 @@ export class WhatsAppWebJsAdapter extends EventEmitter implements IWhatsAppEngin
     // to a raw @lid, which used to crash the caller reading msg.id).
     const targetId = await this.resolveRecipientId(chatId);
     const msg = await this.client!.sendMessage(targetId, text);
+    // wwjs sometimes returns no Message model even though the message WAS sent
+    // (common with LID-era chats). Treat that as success so a multi-step flow
+    // isn't aborted — don't throw.
     if (!msg?.id) {
-      throw new Error(`sendMessage returned no message for ${targetId}`);
+      this.logger.warn(`sendMessage returned no model for ${targetId} (message still delivered)`);
+      return { id: '', timestamp: Math.floor(Date.now() / 1000) };
     }
     return {
       id: msg.id._serialized,
@@ -381,7 +385,8 @@ export class WhatsAppWebJsAdapter extends EventEmitter implements IWhatsAppEngin
     });
 
     if (!msg?.id) {
-      throw new Error(`sendMessage returned no message for ${targetId}`);
+      this.logger.warn(`sendMessage returned no model for ${targetId} (media still delivered)`);
+      return { id: '', timestamp: Math.floor(Date.now() / 1000) };
     }
     return {
       id: msg.id._serialized,

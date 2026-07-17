@@ -49,6 +49,9 @@ const MAX_STEPS = 50;
  *  a scheduled/parked design rather than a blocking wait. */
 const MAX_DELAY_MS = 300_000;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+// Space consecutive flow sends so WhatsApp/wwjs doesn't drop the follow-up
+// messages (and to avoid tripping rapid-send throttling).
+const INTER_SEND_DELAY_MS = 800;
 
 @Injectable()
 export class FlowEngineService {
@@ -492,6 +495,9 @@ export class FlowEngineService {
         caption: rec.caption,
       });
     }
+
+    // Brief pause so back-to-back nodes don't fire too fast for WhatsApp.
+    await new Promise(resolve => setTimeout(resolve, INTER_SEND_DELAY_MS));
   }
 
   // ===========================================================================
