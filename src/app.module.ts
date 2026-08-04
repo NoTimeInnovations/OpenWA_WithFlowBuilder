@@ -29,6 +29,8 @@ import { GroupLeaveModule } from './modules/group-leave/group-leave.module';
 import { HooksModule } from './core/hooks';
 import { PluginsModule } from './core/plugins';
 import { PluginsApiModule } from './modules/plugins/plugins.module';
+import { CampaignModule } from './modules/campaign/campaign.module';
+import { MessageAckModule } from './common/services/message-ack.module';
 
 // Only import QueueModule if explicitly enabled to avoid Redis connection errors
 const queueModules: Array<Type | DynamicModule> = [];
@@ -76,6 +78,7 @@ if (process.env.QUEUE_ENABLED === 'true') {
             __dirname + '/modules/message/**/*.entity{.ts,.js}',
             __dirname + '/modules/flow/**/*.entity{.ts,.js}',
             __dirname + '/modules/group-leave/**/*.entity{.ts,.js}',
+            __dirname + '/modules/campaign/**/*.entity{.ts,.js}',
           ],
           migrations: [__dirname + '/database/migrations/*{.ts,.js}'],
           logging: configService.get<boolean>('dataDatabase.logging', false),
@@ -167,6 +170,8 @@ if (process.env.QUEUE_ENABLED === 'true') {
     PluginsApiModule, // Phase 5: Plugins API
     FlowModule, // Messaging Flow automation builder
     GroupLeaveModule, // Group-leave goodbye audio automation
+    MessageAckModule, // Global in-process bus for message delivery/read acks
+    CampaignModule, // Customer lists + scheduled bulk campaigns
   ],
 })
 export class AppModule {}

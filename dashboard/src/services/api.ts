@@ -642,3 +642,154 @@ export const groupLeaveApi = {
   delete: (id: string) => request<void>(`/group-leave-rules/${id}`, { method: 'DELETE' }),
   uploadMedia: (file: File) => uploadGroupLeaveMedia(file),
 };
+
+// =============================================================================
+// Customer Lists + Campaigns
+// =============================================================================
+
+export interface CustomerListRecipient {
+  name: string;
+  phone: string;
+  jid: string;
+  raw?: string;
+}
+
+export interface CustomerListSummary {
+  id: string;
+  name: string;
+  description: string | null;
+  defaultCountryCode: string | null;
+  source: string;
+  recipientCount: number;
+  createdAt: string;
+  updatedAt: string;
+  lastCampaignAt: string | null;
+}
+
+export interface CustomerList extends CustomerListSummary {
+  recipients: CustomerListRecipient[];
+}
+
+export interface ImportListSummary {
+  received: number;
+  imported: number;
+  duplicates: number;
+  invalid: number;
+}
+
+export interface ImportResult {
+  list: CustomerList;
+  summary: ImportListSummary;
+}
+
+export interface ImportListPayload {
+  name?: string;
+  description?: string;
+  defaultCountryCode?: string;
+  recipients: { name?: string; phone: string }[];
+}
+
+export type CampaignStatus = 'draft' | 'running' | 'paused' | 'completed' | 'cancelled' | 'failed';
+export type RecipientStatus = 'pending' | 'sent' | 'delivered' | 'read' | 'failed' | 'skipped';
+
+export interface CampaignMedia {
+  kind: 'image' | 'video' | 'document' | 'audio';
+  url?: string;
+  base64?: string;
+  mimetype?: string;
+  filename?: string;
+  caption?: string;
+}
+
+export interface CampaignMessage {
+  text: string;
+  media?: CampaignMedia | null;
+}
+
+export interface CampaignOptions {
+  delayBetweenMessages: number;
+  randomizeDelay: boolean;
+  randomizeExtraMs: number;
+  stopOnError: boolean;
+  skipAlreadySent: boolean;
+}
+
+export interface CampaignProgress {
+  total: number;
+  sent: number;
+  delivered: number;
+  read: number;
+  failed: number;
+  pending: number;
+  skipped: number;
+  cancelled: number;
+}
+
+export interface CampaignRecipient {
+  name: string;
+  phone: string;
+  jid: string;
+  status: RecipientStatus;
+  messageId?: string;
+  error?: string;
+  sentAt?: string | null;
+  deliveredAt?: string | null;
+  readAt?: string | null;
+}
+
+export interface CampaignSummary {
+  id: string;
+  listId: string | null;
+  listName: string;
+  sessionId: string;
+  sessionName: string | null;
+  name: string;
+  message: CampaignMessage;
+  status: CampaignStatus;
+  options: CampaignOptions;
+  progress: CampaignProgress;
+  currentIndex: number;
+  createdAt: string;
+  updatedAt: string;
+  startedAt: string | null;
+  completedAt: string | null;
+}
+
+export interface Campaign extends CampaignSummary {
+  recipients: CampaignRecipient[];
+}
+
+export interface CreateCampaignPayload {
+  listId: string;
+  sessionId: string;
+  name?: string;
+  message: { text: string; media?: CampaignMedia };
+  options?: Partial<CampaignOptions>;
+}
+
+export const customerListApi = {
+  list: () => request<CustomerListSummary[]>('/customer-lists'),
+  get: (id: string) => request<CustomerList>(`/customer-lists/${id}`),
+  import: (data: ImportListPayload) =>
+    request<ImportResult>('/customer-lists', { method: 'POST', body: JSON.stringify(data) }),
+  update: (id: string, data: { name?: string; description?: string }) =>
+    request<CustomerList>(`/customer-lists/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+  delete: (id: string) => request<void>(`/customer-lists/${id}`, { method: 'DELETE' }),
+  campaigns: (id: string) => request<CampaignSummary[]>(`/customer-lists/${id}/campaigns`),
+};
+
+export const campaignApi = {
+  list: (listId?: string) =>
+    request<CampaignSummary[]>(`/campaigns${listId ? `?listId=${encodeURIComponent(listId)}` : ''}`),
+  get: (id: string) => request<Campaign>(`/campaigns/${id}`),
+  create: (data: CreateCampaignPayload) =>
+    request<Campaign>('/campaigns', { method: 'POST', body: JSON.stringify(data) }),
+  pause: (id: string) => request<CampaignSummary>(`/campaigns/${id}/pause`, { method: 'POST' }),
+  resume: (id: string) => request<CampaignSummary>(`/campaigns/${id}/resume`, { method: 'POST' }),
+  cancel: (id: string) => request<CampaignSummary>(`/campaigns/${id}/cancel`, { method: 'POST' }),
+  delete: (id: string) => request<void>(`/campaigns/${id}`, { method: 'DELETE' }),
+  exportCsv: (id: string, name: string) => {
+    const safe = name.replace(/[^a-z0-9-_]+/gi, '_').slice(0, 40) || 'campaign';
+    return downloadFile(`/campaigns/${id}/export`, `${safe}.csv`);
+  },
+};

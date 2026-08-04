@@ -20,6 +20,7 @@ import { WebhookService } from '../webhook/webhook.service';
 import { FlowEngineService } from '../flow/flow-engine.service';
 import { GroupLeaveService } from '../group-leave/group-leave.service';
 import { HookManager } from '../../core/hooks';
+import { MessageAckService } from '../../common/services/message-ack.service';
 
 interface ReconnectState {
   attempts: number;
@@ -51,6 +52,7 @@ export class SessionService implements OnModuleDestroy, OnModuleInit {
     @Inject(forwardRef(() => GroupLeaveService))
     private readonly groupLeaveService: GroupLeaveService,
     private readonly hookManager: HookManager,
+    private readonly messageAck: MessageAckService,
   ) {}
 
   /**
@@ -355,6 +357,11 @@ export class SessionService implements OnModuleDestroy, OnModuleInit {
                 }),
               );
           });
+      },
+      onMessageAck: (messageId: string, ack: number): void => {
+        // Forward delivery/read acknowledgements onto the in-process bus so the
+        // campaign runner can update per-recipient delivery status (best-effort).
+        this.messageAck.emitAck(messageId, ack);
       },
       onGroupLeave: (event): void => {
         this.logger.log(`Participant(s) left group ${event.groupId}`, {

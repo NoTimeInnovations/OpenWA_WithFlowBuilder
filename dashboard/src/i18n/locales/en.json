@@ -36,7 +36,7 @@
     "optional": "optional",
     "language": "Language",
     "english": "English",
-    "hebrew": "עברית",
+    "hebrew": "\u05e2\u05d1\u05e8\u05d9\u05ea",
     "back": "Back",
     "next": "Next",
     "previous": "Previous",
@@ -63,7 +63,8 @@
     "plugins": "Plugins",
     "logs": "Logs",
     "messagingFlow": "Messaging Flow",
-    "groupLeave": "Group Join / Leave"
+    "groupLeave": "Group Join / Leave",
+    "campaigns": "Campaigns"
   },
   "groupLeave": {
     "title": "Group Join / Leave Media",
@@ -93,19 +94,19 @@
       "selectSession": "Select a session",
       "group": "Group",
       "selectGroup": "Select a group",
-      "loadingGroups": "Loading groups…",
+      "loadingGroups": "Loading groups\u2026",
       "groupsError": "Couldn't load groups. Make sure the session is connected.",
       "typeCommunity": "Community",
       "typeCommunityGroup": "Community group",
       "typeGroup": "Group",
       "members": "{{count}} members",
       "media": "What to send",
-      "noMedia": "Nothing yet — add a text message, upload files, or add a URL.",
+      "noMedia": "Nothing yet \u2014 add a text message, upload files, or add a URL.",
       "addFile": "Upload files",
       "addUrl": "Add URL",
       "addText": "Add text",
       "textMessage": "Text message",
-      "textPlaceholder": "Type a message…",
+      "textPlaceholder": "Type a message\u2026",
       "uploadedFile": "Uploaded file",
       "captionPlaceholder": "Optional caption",
       "kindText": "Text",
@@ -113,7 +114,7 @@
       "kindVideo": "Video",
       "kindImage": "Image",
       "kindDocument": "Document",
-      "uploading": "Uploading…",
+      "uploading": "Uploading\u2026",
       "sendAsVoice": "Send as voice note"
     },
     "empty": {
@@ -146,8 +147,8 @@
     "connectionError": "Unable to connect to server. Please try again.",
     "help": "Need help?",
     "viewDocs": "View Documentation",
-    "footer": "Made with ❤️ by Yudhi Armyndharis and the OpenWA Community",
-    "version": "v{{version}} · {{date}}"
+    "footer": "Made with \u2764\ufe0f by Yudhi Armyndharis and the OpenWA Community",
+    "version": "v{{version}} \u00b7 {{date}}"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -223,7 +224,7 @@
     "qr": {
       "title": "Scan QR Code",
       "step1": "<strong>1.</strong> Open WhatsApp on your phone",
-      "step2": "<strong>2.</strong> Tap <strong>Menu</strong> → <strong>Linked Devices</strong>",
+      "step2": "<strong>2.</strong> Tap <strong>Menu</strong> \u2192 <strong>Linked Devices</strong>",
       "step3": "<strong>3.</strong> Tap <strong>Link a Device</strong> and scan this QR",
       "autoRefresh": "QR updates automatically every 5 seconds",
       "generating": "Generating QR code...",
@@ -521,11 +522,11 @@
       "disabled": "Disabled"
     },
     "restart": {
-      "idleTitle": "⚙️ Configuration Saved",
-      "restartingTitle": "🔄 Restarting Server...",
-      "waitingTitle": "⏳ Please Wait...",
-      "successTitle": "✅ Server Ready",
-      "errorTitle": "❌ Restart Failed",
+      "idleTitle": "\u2699\ufe0f Configuration Saved",
+      "restartingTitle": "\ud83d\udd04 Restarting Server...",
+      "waitingTitle": "\u23f3 Please Wait...",
+      "successTitle": "\u2705 Server Ready",
+      "errorTitle": "\u274c Restart Failed",
       "idleDesc": "Configuration has been saved to <code>.env.generated</code>.<br/>A server restart is required to apply the changes.",
       "later": "Restart Later",
       "now": "Restart Now",
@@ -612,10 +613,10 @@
       "duplicate": "Duplicate"
     },
     "toasts": {
-      "duplicated": "Duplicated as “{{name}}” (disabled)"
+      "duplicated": "Duplicated as \u201c{{name}}\u201d (disabled)"
     },
     "triggerSummary": {
-      "none": "—",
+      "none": "\u2014",
       "exact": "Exact: {{keywords}}",
       "contains": "Contains: {{keywords}}",
       "welcome": "First contact",
@@ -656,14 +657,14 @@
       "name": "Flow name",
       "namePlaceholder": "e.g. Welcome bot",
       "scope": "Runs on",
-      "selectSession": "Select a session…",
+      "selectSession": "Select a session\u2026",
       "noSessions": "No sessions available",
       "trigger": "Trigger when",
       "keywords": "Keywords",
       "keywordsPlaceholder": "hi, hello, hey (comma separated)",
       "reply": "Reply with",
-      "replyTextPlaceholder": "Type your reply message…",
-      "mediaUrlPlaceholder": "https://… media URL",
+      "replyTextPlaceholder": "Type your reply message\u2026",
+      "mediaUrlPlaceholder": "https://\u2026 media URL",
       "captionPlaceholder": "Caption (optional)",
       "escapeKeyword": "Stop keyword (optional)",
       "escapePlaceholder": "e.g. stop",
@@ -671,7 +672,7 @@
     },
     "builder": {
       "title": "Flow Builder",
-      "placeholder": "Visual builder for flow {{id}} — coming in the next step.",
+      "placeholder": "Visual builder for flow {{id}} \u2014 coming in the next step.",
       "addNode": "Add node",
       "variableName": "Save reply to variable",
       "validation": "Validation",
@@ -680,15 +681,15 @@
       "varName": "Variable name",
       "varValue": "Value",
       "jumpTarget": "Jump to node",
-      "endHint": "Ends the flow and clears the contact’s state.",
+      "endHint": "Ends the flow and clears the contact\u2019s state.",
       "menuText": "Menu text",
       "choices": "Choices (each becomes a branch)",
       "addChoice": "Add choice",
       "rules": "Rules (first match wins)",
       "addRule": "Add rule",
-      "elseHint": "The “else” branch is taken when no rule matches.",
+      "elseHint": "The \u201celse\u201d branch is taken when no rule matches.",
       "flowSettings": "Flow settings",
-      "settingsHint": "Select a node to edit it, or drag from a node’s handle to connect steps.",
+      "settingsHint": "Select a node to edit it, or drag from a node\u2019s handle to connect steps.",
       "errNoName": "Please enter a flow name.",
       "errNoTrigger": "The flow needs a trigger node.",
       "errNoSession": "Select at least one session for this scope.",
@@ -696,6 +697,134 @@
       "saveTitle": "Save flow",
       "inspector": "Properties",
       "fileName": "File name"
+    }
+  },
+  "campaigns": {
+    "title": "Campaigns",
+    "subtitle": "Upload customer lists and send scheduled WhatsApp broadcasts",
+    "backToLists": "Back to lists",
+    "never": "Never",
+    "send": "Send",
+    "view": "View",
+    "newSend": "New send",
+    "runs": "Send history",
+    "noRuns": "No sends yet. Click \u201cNew send\u201d to start one.",
+    "customers": "Customers",
+    "searchPlaceholder": "Search name or number\u2026",
+    "recipientsCount": "{{count}} customers",
+    "fromList": "From: {{list}}",
+    "messageLabel": "Message",
+    "mediaOnly": "(media only)",
+    "attachedMedia": "Attached {{kind}}",
+    "recipientStatus": "Recipient status",
+    "empty": {
+      "title": "No customer lists yet",
+      "description": "Import a JSON list of customers (name + phone) to get started."
+    },
+    "cols": {
+      "name": "Name",
+      "recipients": "Recipients",
+      "created": "Created",
+      "lastSent": "Last sent",
+      "actions": "Actions",
+      "run": "Run",
+      "session": "Session",
+      "status": "Status",
+      "progress": "Progress",
+      "started": "Started",
+      "phone": "Phone",
+      "sentAt": "Sent at",
+      "received": "Received",
+      "error": "Error"
+    },
+    "stats": {
+      "sent": "Sent",
+      "delivered": "Delivered",
+      "read": "Read",
+      "failed": "Failed",
+      "pending": "Pending",
+      "skipped": "Skipped",
+      "cancelled": "Cancelled"
+    },
+    "filter": {
+      "all": "All statuses"
+    },
+    "cstatus": {
+      "draft": "Draft",
+      "running": "Running",
+      "paused": "Paused",
+      "completed": "Completed",
+      "cancelled": "Cancelled",
+      "failed": "Failed"
+    },
+    "rstatus": {
+      "pending": "Pending",
+      "sent": "Sent",
+      "delivered": "Delivered",
+      "read": "Read",
+      "failed": "Failed",
+      "skipped": "Skipped"
+    },
+    "controls": {
+      "pause": "Pause",
+      "resume": "Resume",
+      "cancel": "Cancel",
+      "export": "Export CSV",
+      "pauseError": "Failed to pause",
+      "resumeError": "Failed to resume",
+      "cancelError": "Failed to cancel"
+    },
+    "rename": {
+      "button": "Rename",
+      "title": "Rename list",
+      "success": "List renamed",
+      "error": "Rename failed"
+    },
+    "deleteList": {
+      "title": "Delete list",
+      "confirm": "Delete \u201c{{name}}\u201d? Past sends stay in history.",
+      "success": "List deleted",
+      "error": "Delete failed"
+    },
+    "deleteRun": {
+      "title": "Delete run",
+      "confirm": "Delete this send run? This cannot be undone.",
+      "error": "Delete failed"
+    },
+    "import": {
+      "button": "Import list",
+      "title": "Import customer list",
+      "help": "Upload or paste a JSON array of customers. Keys like name/phone/mobile/number are detected automatically.",
+      "choose": "Choose a .json file",
+      "orPaste": "Or paste JSON",
+      "listName": "List name",
+      "namePlaceholder": "e.g. Diwali customers",
+      "countryCode": "Country code",
+      "parsed": "{{count}} customers found in the file.",
+      "save": "Import",
+      "successTitle": "List imported",
+      "successDesc": "{{imported}} imported \u00b7 {{duplicates}} duplicates \u00b7 {{invalid}} invalid"
+    },
+    "new": {
+      "title": "Send to \u201c{{list}}\u201d",
+      "session": "Send from (session)",
+      "noReadySessions": "No connected sessions",
+      "runName": "Run name (optional)",
+      "runNamePlaceholder": "e.g. Diwali offer",
+      "message": "Message",
+      "messagePlaceholder": "Hi {name}! \u2026",
+      "imageUrl": "Image URL (optional)",
+      "imageHint": "Your message text will be sent as the image caption.",
+      "preview": "Preview",
+      "delay": "Delay between messages (sec)",
+      "random": "Extra random delay (sec)",
+      "skipAlreadySent": "Skip customers already sent in a previous run",
+      "estimate": "About {{count}} customers \u00b7 ~{{minutes}} min at this pace",
+      "send": "Start sending",
+      "started": "Campaign started",
+      "startedDesc": "\u201c{{name}}\u201d is now sending",
+      "noSession": "Select a connected session first",
+      "noMessage": "Enter a message or image URL"
     }
   }
 }
