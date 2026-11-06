@@ -5,40 +5,40 @@ import type { FlowGraph, FlowScope, TriggerDef } from '../dto/flow-graph.types';
 @Entity('flows')
 export class Flow {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+  id!: string;
 
   @Column({ type: 'varchar', length: 255 })
-  name: string;
+  name!: string;
 
   @Column({ type: 'varchar', length: 512, nullable: true })
-  description: string | null;
+  description!: string | null;
 
   @Column({ type: 'boolean', default: true })
-  enabled: boolean;
+  enabled!: boolean;
 
   /** { type: 'session' | 'sessions' | 'all', sessionIds?: string[] } */
   @Column({ type: jsonColumnType(), default: '{"type":"all"}' })
-  scope: FlowScope;
+  scope!: FlowScope;
 
   /** The full @xyflow/react document: { nodes, edges, viewport? }. */
   @Column({ type: jsonColumnType(), default: '{"nodes":[],"edges":[]}' })
-  graph: FlowGraph;
+  graph!: FlowGraph;
 
   /** Denormalized trigger defs extracted from the trigger node on save (fast inbound matching). */
   @Column({ type: jsonColumnType(), default: '[]' })
-  triggers: TriggerDef[];
+  triggers!: TriggerDef[];
 
   /** Global keyword that aborts an active run for this flow (e.g. 'stop'). */
   @Column({ type: 'varchar', length: 64, nullable: true })
-  escapeKeyword: string | null;
+  escapeKeyword!: string | null;
 
   /** Parked-run auto-abort window in hours. */
   @Column({ type: 'int', default: 24 })
-  runTtlHours: number;
+  runTtlHours!: number;
 
   @CreateDateColumn()
-  createdAt: Date;
+  createdAt!: Date;
 
   @UpdateDateColumn()
-  updatedAt: Date;
+  updatedAt!: Date;
 }

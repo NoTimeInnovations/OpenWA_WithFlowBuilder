@@ -10,6 +10,7 @@ import {
   Matches,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { ToStrictArray, ToStrictString } from '../../../common/utils/strict-boolean';
 
 /** One row of an uploaded customer list. The frontend maps arbitrary JSON keys
  *  (Name/fullName/phone/mobile/number...) down to this shape before sending. */
@@ -18,12 +19,14 @@ export class RawRecipientDto {
   @IsOptional()
   @IsString()
   @MaxLength(200)
+  @ToStrictString()
   name?: string;
 
   @ApiProperty({ description: 'Phone number in any common format', example: '+91 98470 12345' })
   @IsString()
   @MaxLength(40)
-  phone: string;
+  @ToStrictString()
+  phone!: string;
 }
 
 export class CreateCustomerListDto {
@@ -31,12 +34,14 @@ export class CreateCustomerListDto {
   @IsOptional()
   @IsString()
   @MaxLength(200)
+  @ToStrictString()
   name?: string;
 
   @ApiPropertyOptional({ description: 'Optional description / notes' })
   @IsOptional()
   @IsString()
   @MaxLength(500)
+  @ToStrictString()
   description?: string;
 
   @ApiPropertyOptional({ description: 'Default country code (digits) for local numbers, e.g. 91', example: '91' })
@@ -50,7 +55,8 @@ export class CreateCustomerListDto {
   @ArrayMaxSize(50000)
   @ValidateNested({ each: true })
   @Type(() => RawRecipientDto)
-  recipients: RawRecipientDto[];
+  @ToStrictArray()
+  recipients!: RawRecipientDto[];
 }
 
 export class UpdateCustomerListDto {
@@ -58,11 +64,13 @@ export class UpdateCustomerListDto {
   @IsOptional()
   @IsString()
   @MaxLength(200)
+  @ToStrictString()
   name?: string;
 
   @ApiPropertyOptional({ description: 'New description' })
   @IsOptional()
   @IsString()
   @MaxLength(500)
+  @ToStrictString()
   description?: string;
 }

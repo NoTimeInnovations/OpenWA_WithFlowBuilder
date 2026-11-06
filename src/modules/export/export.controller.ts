@@ -60,7 +60,9 @@ export class ExportController {
     // Sheet: Chats (1:1 conversations)
     const chatRows: Row[] = chats
       .map(ch => {
-        const number = ch.number || phoneFromName(ch.name);
+        // Upstream ChatSummary ids are neutral: a phone chat is `<digits>@c.us`; a lid chat whose
+        // number is unknown stays `<lid>@lid`, so fall back to the number in its name.
+        const number = (ch.id.endsWith('@c.us') ? ch.id.split('@')[0] : '') || phoneFromName(ch.name);
         return {
           Name: ch.name || nameById.get(ch.id) || '',
           Number: number ? formatNumber(number) : '',

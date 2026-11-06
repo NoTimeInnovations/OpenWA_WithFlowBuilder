@@ -24,50 +24,50 @@ import type { FlowRunStatus } from '../dto/flow-graph.types';
 @Index(['flowId'])
 export class FlowExecutionState {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+  id!: string;
 
   @Column({ type: 'uuid' })
-  flowId: string;
+  flowId!: string;
 
   @ManyToOne(() => Flow, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'flowId' })
-  flow: Flow;
+  flow!: Flow;
 
   @Column({ type: 'uuid' })
-  sessionId: string;
+  sessionId!: string;
 
   @ManyToOne(() => Session, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'sessionId' })
-  session: Session;
+  session!: Session;
 
   /** WhatsApp jid of the contact (the inbound message's `from`). */
   @Column({ type: 'varchar', length: 255 })
-  chatId: string;
+  chatId!: string;
 
   /** Node the contact is currently parked on (awaiting their next reply). */
   @Column({ type: 'varchar', length: 128, nullable: true })
-  currentNodeId: string | null;
+  currentNodeId!: string | null;
 
   @Column({ type: 'varchar', length: 32, default: 'active' })
-  status: FlowRunStatus;
+  status!: FlowRunStatus;
 
   /** Captured run-scoped values (e.g. { name: 'Abhi' }). */
   @Column({ type: jsonColumnType(), default: '{}' })
-  variables: Record<string, unknown>;
+  variables!: Record<string, unknown>;
 
   /** Runaway-loop guard (jump/goto). */
   @Column({ type: 'int', default: 0 })
-  stepCount: number;
+  stepCount!: number;
 
   @Column({ type: dateColumnType(), nullable: true, transformer: DateTransformer })
-  lastInteractionAt: Date | null;
+  lastInteractionAt!: Date | null;
 
   @Column({ type: dateColumnType(), nullable: true, transformer: DateTransformer })
-  expiresAt: Date | null;
+  expiresAt!: Date | null;
 
   @CreateDateColumn()
-  startedAt: Date;
+  startedAt!: Date;
 
   @UpdateDateColumn()
-  updatedAt: Date;
+  updatedAt!: Date;
 }

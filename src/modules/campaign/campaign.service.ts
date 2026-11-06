@@ -13,7 +13,7 @@ import {
 import { CreateCampaignDto } from './dto';
 import { CustomerListService, CustomerListSummary } from './customer-list.service';
 import { SessionService } from '../session/session.service';
-import { MessageAckService } from '../../common/services/message-ack.service';
+import { HookManager } from '../../core/hooks';
 import { IWhatsAppEngine, MessageResult } from '../../engine/interfaces/whatsapp-engine.interface';
 
 /** Campaign row without the (large) recipients array, for list views. */
@@ -51,7 +51,7 @@ export class CampaignService implements OnModuleInit {
     private readonly campaignRepository: Repository<Campaign>,
     private readonly sessionService: SessionService,
     private readonly customerListService: CustomerListService,
-    private readonly messageAck: MessageAckService,
+    private readonly hookManager: HookManager,
   ) {}
 
   onModuleInit(): void {
@@ -62,10 +62,16 @@ export class CampaignService implements OnModuleInit {
       .catch(err => this.logger.warn(`Failed to reset running campaigns: ${String(err)}`));
 
     // Best-effort delivery/read tracking from WhatsApp acks.
-    this.messageAck.onAck((messageId, ack) => {
-      void this.handleAck(messageId, ack).catch(err =>
-        this.logger.debug(`Ack handling error for ${messageId}: ${String(err)}`),
-      );
+    // The session core fires the `message:ack` hook for every receipt, with the numeric ack level
+    // (1 sent, 2 delivered, 3 read, 4 played). Always continue: we only observe.
+    this.hookManager.register('campaign', 'message:ack', async ctx => {
+      const data = ctx.data as { messageId?: string; ack?: number } | undefined;
+      if (data?.messageId && typeof data.ack === 'number') {
+        void this.handleAck(data.messageId, data.ack).catch(err =>
+          this.logger.debug(`Ack handling error for ${data.messageId}: ${String(err)}`),
+        );
+      }
+      return { continue: true, data: ctx.data };
     });
   }
 

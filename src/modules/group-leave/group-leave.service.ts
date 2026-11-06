@@ -1,4 +1,13 @@
-import { Injectable, NotFoundException, BadRequestException, Inject, forwardRef } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  Inject,
+  forwardRef,
+  OnModuleInit,
+  OnModuleDestroy,
+} from '@nestjs/common';
+import { AppEventsService } from '../../common/services/app-events.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as crypto from 'crypto';
@@ -75,7 +84,7 @@ interface ResolvedItem {
 }
 
 @Injectable()
-export class GroupLeaveService {
+export class GroupLeaveService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = createLogger('GroupLeaveService');
 
   constructor(
@@ -84,7 +93,32 @@ export class GroupLeaveService {
     private readonly storageService: StorageService,
     @Inject(forwardRef(() => SessionService))
     private readonly sessionService: SessionService,
+    private readonly appEvents: AppEventsService,
   ) {}
+
+  private unsubscribe?: () => void;
+
+  onModuleInit(): void {
+    // group.join / group.leave from either engine, already in the neutral id dialect.
+    this.unsubscribe = this.appEvents.onGroupEvent((sessionId, event) => {
+      if (event.kind !== 'join' && event.kind !== 'leave') return;
+      this.logger.log(`Participant(s) ${event.kind === 'join' ? 'joined' : 'left'} group ${event.groupId}`, {
+        sessionId,
+        groupId: event.groupId,
+        participantIds: event.participantIds,
+        action: `group_${event.kind}`,
+      });
+      void this.handleGroupEvent(sessionId, event.groupId, event.participantIds, event.kind).catch(err =>
+        this.logger.error('Group join/leave handler error', err instanceof Error ? err.message : String(err), {
+          sessionId,
+        }),
+      );
+    });
+  }
+
+  onModuleDestroy(): void {
+    this.unsubscribe?.();
+  }
 
   // ===========================================================================
   // CRUD
@@ -321,7 +355,7 @@ export class GroupLeaveService {
       data,
       filename: item.filename || undefined,
       caption: item.caption || undefined,
-      asVoice: item.kind === 'audio' ? (item.asVoice ?? true) : undefined,
+      ptt: item.kind === 'audio' ? (item.asVoice ?? true) : undefined,
     };
   }
 

@@ -56,7 +56,7 @@ fi
 
 # 4) Build & start.
 echo "▶ Building & starting containers (first build takes a few minutes)…"
-sudo docker compose -f deploy/docker-compose.prod.yml --env-file deploy/.env.prod up -d --build
+sudo docker compose -f deploy/docker-compose.prod.yml --env-file deploy/.env.prod up -d --build --remove-orphans
 
 # 5) Wait for the API to report healthy.
 echo "▶ Waiting for the API to become healthy…"

@@ -1,8 +1,7 @@
 # Automatic HTTPS (Let's Encrypt) for OpenWA.
 # $DOMAIN is injected from deploy/.env.prod via the caddy container env.
-# The dashboard container (nginx) serves the SPA and proxies /api/ and
-# /socket.io/ to the API container, so we only need to front the dashboard.
+# The API container serves the dashboard SPA, /api/ and /socket.io/ on one port.
 {$DOMAIN} {
 	encode zstd gzip
-	reverse_proxy dashboard:80
+	reverse_proxy openwa:2785
 }

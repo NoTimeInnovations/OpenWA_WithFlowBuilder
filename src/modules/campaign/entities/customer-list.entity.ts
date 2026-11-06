@@ -22,35 +22,35 @@ export interface CustomerListRecipient {
 @Entity('customer_lists')
 export class CustomerList {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+  id!: string;
 
   @Column({ type: 'varchar', length: 200 })
-  name: string;
+  name!: string;
 
   @Column({ type: 'varchar', length: 500, nullable: true })
-  description: string | null;
+  description!: string | null;
 
   /** Digits-only country code used to normalize local numbers at import (e.g. `91`). */
   @Column({ name: 'default_country_code', type: 'varchar', length: 8, nullable: true })
-  defaultCountryCode: string | null;
+  defaultCountryCode!: string | null;
 
   @Column({ type: 'varchar', length: 50, default: 'json-upload' })
-  source: string;
+  source!: string;
 
   @Column({ type: jsonColumnType(), default: '[]' })
-  recipients: CustomerListRecipient[];
+  recipients!: CustomerListRecipient[];
 
   /** Denormalized count so list views don't need to load the full recipients array. */
   @Column({ name: 'recipient_count', type: 'int', default: 0 })
-  recipientCount: number;
+  recipientCount!: number;
 
   @CreateDateColumn({ name: 'created_at' })
-  createdAt: Date;
+  createdAt!: Date;
 
   @UpdateDateColumn({ name: 'updated_at' })
-  updatedAt: Date;
+  updatedAt!: Date;
 
   /** When this list was last used in a campaign — powers the "last sent" column. */
   @Column({ name: 'last_campaign_at', type: dateColumnType(), nullable: true, transformer: DateTransformer })
-  lastCampaignAt: Date | null;
+  lastCampaignAt!: Date | null;
 }

@@ -1,4 +1,5 @@
-import { Injectable, Inject, forwardRef } from '@nestjs/common';
+import { Injectable, Inject, forwardRef, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
+import { AppEventsService } from '../../common/services/app-events.service';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Flow } from './entities/flow.entity';
@@ -54,7 +55,7 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const INTER_SEND_DELAY_MS = 800;
 
 @Injectable()
-export class FlowEngineService {
+export class FlowEngineService implements OnModuleInit, OnModuleDestroy {
   private readonly logger = createLogger('FlowEngineService');
 
   /** Per-(session,chat) promise chain so two fast inbound messages can't double-advance the FSM. */
@@ -67,7 +68,23 @@ export class FlowEngineService {
     private readonly runRepo: Repository<FlowExecutionState>,
     @Inject(forwardRef(() => SessionService))
     private readonly sessionService: SessionService,
+    private readonly appEvents: AppEventsService,
   ) {}
+
+  private unsubscribe?: () => void;
+
+  onModuleInit(): void {
+    // Every inbound message the session core stored and dispatched (see MessageProjector).
+    this.unsubscribe = this.appEvents.onInbound((sessionId, message) => {
+      void this.handleInbound(sessionId, message).catch(err =>
+        this.logger.error('Flow engine error', err instanceof Error ? err.message : String(err), { sessionId }),
+      );
+    });
+  }
+
+  onModuleDestroy(): void {
+    this.unsubscribe?.();
+  }
 
   // ===========================================================================
   // Public entry point — called from SessionService.onMessage (fire-and-forget)
@@ -445,10 +462,11 @@ export class FlowEngineService {
       to: sessionId,
       chatId: from,
       body,
-      type: 'chat',
+      type: 'text',
       timestamp: Math.floor(Date.now() / 1000),
       fromMe: false,
       isGroup: false,
+      kind: 'individual',
     };
     const startNode = this.startNodeAfterTrigger(flow.graph);
     await this.executeForward(flow, run, startNode, message, null, result.outbound, result.executedNodes);

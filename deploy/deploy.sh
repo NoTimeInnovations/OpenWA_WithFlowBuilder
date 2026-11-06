@@ -6,9 +6,9 @@
 #   SSH_USER=ec2-user DOMAIN=foo.example.com bash deploy/deploy.sh
 set -euo pipefail
 
-EC2_IP="${EC2_IP:-13.235.70.130}"
+EC2_IP="${EC2_IP:-13.235.77.215}"
 SSH_USER="${SSH_USER:-ubuntu}"
-SSH_KEY="${SSH_KEY:-$HOME/Documents/Server Keys/server-aws/OpenWA.pem}"
+SSH_KEY="${SSH_KEY:-/Volumes/SSD/menuthere_business/Server Keys/server-aws/OpenWA.pem}"
 DOMAIN="${DOMAIN:-openwa.menuthere.com}"
 REPO_URL="${REPO_URL:-https://github.com/NoTimeInnovations/OpenWA_WithFlowBuilder.git}"
 REMOTE_DIR="${REMOTE_DIR:-OpenWA_WithFlowBuilder}"

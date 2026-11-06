@@ -1,12 +1,11 @@
 # Production stack for OpenWA with automatic HTTPS.
 #
-#   caddy (:80/:443, Let's Encrypt)  ->  dashboard (nginx :80)
-#                                         ├─ serves the SPA
-#                                         ├─ /api/      -> openwa:2785
-#                                         └─ /socket.io/-> openwa:2785
+#   caddy (:80/:443, Let's Encrypt)  ->  openwa:2785
+#                                         ├─ the dashboard SPA (built into the image, SERVE_DASHBOARD)
+#                                         ├─ /api/
+#                                         └─ /socket.io/
 #
-# The API service is named `openwa` so the dashboard's nginx upstream
-# (proxy_pass http://openwa:2785) resolves on the compose network.
+# Since OpenWA 0.29 the API serves the dashboard itself, so there is no separate dashboard container.
 #
 # Run from the repo root:
 #   docker compose -f deploy/docker-compose.prod.yml --env-file deploy/.env.prod up -d --build
@@ -28,6 +27,7 @@ services:
       - SESSION_DATA_PATH=/app/data/sessions
       - STORAGE_LOCAL_PATH=/app/data/media
       - PLUGINS_DIR=/app/data/plugins
+      - SERVE_DASHBOARD=true
     expose:
       - '2785'
     volumes:
@@ -40,23 +40,12 @@ services:
       retries: 5
       start_period: 40s
 
-  dashboard:
-    build:
-      context: ../dashboard
-      dockerfile: Dockerfile
-    container_name: openwa-dashboard
-    restart: unless-stopped
-    depends_on:
-      - openwa
-    expose:
-      - '80'
-
   caddy:
     image: caddy:2
     container_name: openwa-caddy
     restart: unless-stopped
     depends_on:
-      - dashboard
+      - openwa
     ports:
       - '80:80'
       - '443:443'

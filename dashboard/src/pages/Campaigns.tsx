@@ -24,7 +24,7 @@ import type {
 } from '../services/api';
 import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { useRole } from '../hooks/useRole';
-import { useToast } from '../components/Toast';
+import { useToast } from '../hooks/useToast';
 import { PageHeader } from '../components/PageHeader';
 import {
   useCustomerListsQuery,

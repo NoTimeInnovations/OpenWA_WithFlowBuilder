@@ -35,61 +35,61 @@ export interface RuleMediaItem {
 @Index(['sessionId', 'groupId'])
 export class GroupLeaveRule {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+  id!: string;
 
   @Column({ type: 'uuid' })
-  sessionId: string;
+  sessionId!: string;
 
   @ManyToOne(() => Session, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'sessionId' })
-  session: Session;
+  session!: Session;
 
   /** Which participant event triggers this rule */
   @Column({ type: 'varchar', length: 16, default: 'leave' })
-  event: 'join' | 'leave';
+  event!: 'join' | 'leave';
 
   /** Watched group chat id, e.g. "123456789@g.us" */
   @Column({ type: 'varchar', length: 255 })
-  groupId: string;
+  groupId!: string;
 
   /** Cached group display name (for the dashboard list) */
   @Column({ type: 'varchar', length: 512, nullable: true })
-  groupName: string | null;
+  groupName!: string | null;
 
   /** Ordered media items to send (the source of truth; legacy audio* fields below are a fallback) */
   @Column({ type: jsonColumnType(), nullable: true })
-  media: RuleMediaItem[] | null;
+  media!: RuleMediaItem[] | null;
 
   /** @deprecated Legacy single-audio fields, kept for rules created before multi-media */
   @Column({ type: 'varchar', length: 2048, nullable: true })
-  audioUrl: string | null;
+  audioUrl!: string | null;
 
   @Column({ type: 'varchar', length: 512, nullable: true })
-  audioStorageKey: string | null;
+  audioStorageKey!: string | null;
 
   @Column({ type: 'varchar', length: 128, nullable: true })
-  audioMimetype: string | null;
+  audioMimetype!: string | null;
 
   @Column({ type: 'varchar', length: 512, nullable: true })
-  audioFilename: string | null;
+  audioFilename!: string | null;
 
   /** Send the audio as a WhatsApp voice note (PTT) rather than an audio file */
   @Column({ type: 'boolean', default: true })
-  sendAsVoice: boolean;
+  sendAsVoice!: boolean;
 
   /** Seconds to wait after the event before sending the audio (0 = immediate) */
   @Column({ type: 'int', default: 0 })
-  delaySeconds: number;
+  delaySeconds!: number;
 
   @Column({ type: 'boolean', default: true })
-  enabled: boolean;
+  enabled!: boolean;
 
   @Column({ type: dateColumnType(), nullable: true, transformer: DateTransformer })
-  lastTriggeredAt: Date | null;
+  lastTriggeredAt!: Date | null;
 
   @CreateDateColumn()
-  createdAt: Date;
+  createdAt!: Date;
 
   @UpdateDateColumn()
-  updatedAt: Date;
+  updatedAt!: Date;
 }

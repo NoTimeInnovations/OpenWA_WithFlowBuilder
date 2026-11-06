@@ -81,51 +81,51 @@ export interface CampaignProgress {
 @Entity('campaigns')
 export class Campaign {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+  id!: string;
 
   /** Source list id. Nullable + name snapshot so runs survive list deletion. */
   @Column({ name: 'list_id', type: 'varchar', nullable: true })
-  listId: string | null;
+  listId!: string | null;
 
   @Column({ name: 'list_name', type: 'varchar', length: 200 })
-  listName: string;
+  listName!: string;
 
   @Column({ name: 'session_id', type: 'varchar' })
-  sessionId: string;
+  sessionId!: string;
 
   @Column({ name: 'session_name', type: 'varchar', length: 100, nullable: true })
-  sessionName: string | null;
+  sessionName!: string | null;
 
   @Column({ type: 'varchar', length: 200 })
-  name: string;
+  name!: string;
 
   @Column({ type: jsonColumnType() })
-  message: CampaignMessage;
+  message!: CampaignMessage;
 
   @Column({ type: 'varchar', default: CampaignStatus.DRAFT })
-  status: CampaignStatus;
+  status!: CampaignStatus;
 
   @Column({ type: jsonColumnType(), nullable: true })
-  options: CampaignOptions;
+  options!: CampaignOptions;
 
   @Column({ type: jsonColumnType(), nullable: true })
-  progress: CampaignProgress;
+  progress!: CampaignProgress;
 
   @Column({ type: jsonColumnType(), nullable: true })
-  recipients: CampaignRecipient[];
+  recipients!: CampaignRecipient[];
 
   @Column({ name: 'current_index', type: 'int', default: 0 })
-  currentIndex: number;
+  currentIndex!: number;
 
   @CreateDateColumn({ name: 'created_at' })
-  createdAt: Date;
+  createdAt!: Date;
 
   @UpdateDateColumn({ name: 'updated_at' })
-  updatedAt: Date;
+  updatedAt!: Date;
 
   @Column({ name: 'started_at', type: dateColumnType(), nullable: true, transformer: DateTransformer })
-  startedAt: Date | null;
+  startedAt!: Date | null;
 
   @Column({ name: 'completed_at', type: dateColumnType(), nullable: true, transformer: DateTransformer })
-  completedAt: Date | null;
+  completedAt!: Date | null;
 }

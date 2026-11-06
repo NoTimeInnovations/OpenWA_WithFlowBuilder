@@ -14,6 +14,7 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { ToStrictArray, ToStrictBoolean, ToStrictNumber, ToStrictString } from '../../../common/utils/strict-boolean';
 
 export const GROUP_EVENTS = ['join', 'leave'] as const;
 export type GroupEvent = (typeof GROUP_EVENTS)[number];
@@ -29,54 +30,61 @@ export const MAX_MEDIA_ITEMS = 10;
 export class RuleMediaItemDto {
   @ApiProperty({ enum: MEDIA_KINDS })
   @IsIn(MEDIA_KINDS)
-  kind: MediaKind;
+  kind!: MediaKind;
 
   @ApiPropertyOptional({ description: 'Message body (kind = text)' })
   @IsOptional()
   @IsString()
   @MaxLength(4096)
+  @ToStrictString()
   text?: string;
 
   @ApiPropertyOptional({ description: 'Public URL (provide this OR a storageKey)' })
   @IsOptional()
   @IsString()
   @MaxLength(2048)
+  @ToStrictString()
   url?: string;
 
   @ApiPropertyOptional({ description: 'Storage key returned by the upload-media endpoint' })
   @IsOptional()
   @IsString()
   @MaxLength(512)
+  @ToStrictString()
   storageKey?: string;
 
   @ApiPropertyOptional({ description: 'Mime type, e.g. image/jpeg' })
   @IsOptional()
   @IsString()
   @MaxLength(128)
+  @ToStrictString()
   mimetype?: string;
 
   @ApiPropertyOptional({ description: 'Original file name' })
   @IsOptional()
   @IsString()
   @MaxLength(512)
+  @ToStrictString()
   filename?: string;
 
   @ApiPropertyOptional({ description: 'Caption (image / video / document)' })
   @IsOptional()
   @IsString()
   @MaxLength(1024)
+  @ToStrictString()
   caption?: string;
 
   @ApiPropertyOptional({ description: 'Send audio as a voice note (PTT)' })
   @IsOptional()
   @IsBoolean()
+  @ToStrictBoolean()
   asVoice?: boolean;
 }
 
 export class CreateGroupLeaveRuleDto {
   @ApiProperty({ description: 'Session that owns the watched group' })
   @IsUUID()
-  sessionId: string;
+  sessionId!: string;
 
   @ApiPropertyOptional({ description: 'Which event triggers this rule', enum: GROUP_EVENTS, default: 'leave' })
   @IsOptional()
@@ -86,12 +94,14 @@ export class CreateGroupLeaveRuleDto {
   @ApiProperty({ description: 'Watched group chat id', example: '123456789@g.us' })
   @IsString()
   @MaxLength(255)
-  groupId: string;
+  @ToStrictString()
+  groupId!: string;
 
   @ApiPropertyOptional({ description: 'Group display name (cached for the UI)' })
   @IsOptional()
   @IsString()
   @MaxLength(512)
+  @ToStrictString()
   groupName?: string;
 
   @ApiPropertyOptional({ description: 'Media items to send (audio/video/image/document)', type: [RuleMediaItemDto] })
@@ -100,35 +110,41 @@ export class CreateGroupLeaveRuleDto {
   @ArrayMaxSize(MAX_MEDIA_ITEMS)
   @ValidateNested({ each: true })
   @Type(() => RuleMediaItemDto)
+  @ToStrictArray()
   media?: RuleMediaItemDto[];
 
   @ApiPropertyOptional({ description: 'Audio file URL (provide this OR upload a file)' })
   @IsOptional()
   @IsString()
   @MaxLength(2048)
+  @ToStrictString()
   audioUrl?: string;
 
   @ApiPropertyOptional({ description: 'Storage key returned by the upload-audio endpoint' })
   @IsOptional()
   @IsString()
   @MaxLength(512)
+  @ToStrictString()
   audioStorageKey?: string;
 
   @ApiPropertyOptional({ description: 'Audio mime type, e.g. audio/mpeg' })
   @IsOptional()
   @IsString()
   @MaxLength(128)
+  @ToStrictString()
   audioMimetype?: string;
 
   @ApiPropertyOptional({ description: 'Original audio file name' })
   @IsOptional()
   @IsString()
   @MaxLength(512)
+  @ToStrictString()
   audioFilename?: string;
 
   @ApiPropertyOptional({ description: 'Send the audio as a voice note (PTT)', default: true })
   @IsOptional()
   @IsBoolean()
+  @ToStrictBoolean()
   sendAsVoice?: boolean;
 
   @ApiPropertyOptional({ description: `Seconds to wait before sending (0–${MAX_DELAY_SECONDS})`, default: 0 })
@@ -136,11 +152,13 @@ export class CreateGroupLeaveRuleDto {
   @IsInt()
   @Min(0)
   @Max(MAX_DELAY_SECONDS)
+  @ToStrictNumber()
   delaySeconds?: number;
 
   @ApiPropertyOptional({ description: 'Enable/disable the rule', default: true })
   @IsOptional()
   @IsBoolean()
+  @ToStrictBoolean()
   enabled?: boolean;
 }
 
@@ -154,12 +172,14 @@ export class UpdateGroupLeaveRuleDto {
   @IsOptional()
   @IsString()
   @MaxLength(255)
+  @ToStrictString()
   groupId?: string;
 
   @ApiPropertyOptional({ description: 'Group display name' })
   @IsOptional()
   @IsString()
   @MaxLength(512)
+  @ToStrictString()
   groupName?: string;
 
   @ApiPropertyOptional({ description: 'Media items to send (audio/video/image/document)', type: [RuleMediaItemDto] })
@@ -168,35 +188,41 @@ export class UpdateGroupLeaveRuleDto {
   @ArrayMaxSize(MAX_MEDIA_ITEMS)
   @ValidateNested({ each: true })
   @Type(() => RuleMediaItemDto)
+  @ToStrictArray()
   media?: RuleMediaItemDto[];
 
   @ApiPropertyOptional({ description: 'Audio file URL' })
   @IsOptional()
   @IsString()
   @MaxLength(2048)
+  @ToStrictString()
   audioUrl?: string;
 
   @ApiPropertyOptional({ description: 'Storage key returned by the upload-audio endpoint' })
   @IsOptional()
   @IsString()
   @MaxLength(512)
+  @ToStrictString()
   audioStorageKey?: string;
 
   @ApiPropertyOptional({ description: 'Audio mime type' })
   @IsOptional()
   @IsString()
   @MaxLength(128)
+  @ToStrictString()
   audioMimetype?: string;
 
   @ApiPropertyOptional({ description: 'Original audio file name' })
   @IsOptional()
   @IsString()
   @MaxLength(512)
+  @ToStrictString()
   audioFilename?: string;
 
   @ApiPropertyOptional({ description: 'Send the audio as a voice note (PTT)' })
   @IsOptional()
   @IsBoolean()
+  @ToStrictBoolean()
   sendAsVoice?: boolean;
 
   @ApiPropertyOptional({ description: `Seconds to wait before sending (0–${MAX_DELAY_SECONDS})` })
@@ -204,43 +230,45 @@ export class UpdateGroupLeaveRuleDto {
   @IsInt()
   @Min(0)
   @Max(MAX_DELAY_SECONDS)
+  @ToStrictNumber()
   delaySeconds?: number;
 
   @ApiPropertyOptional({ description: 'Enable/disable the rule' })
   @IsOptional()
   @IsBoolean()
+  @ToStrictBoolean()
   enabled?: boolean;
 }
 
 export class AudioUploadResponseDto {
   @ApiProperty()
-  storageKey: string;
+  storageKey!: string;
 
   @ApiProperty({ enum: MEDIA_KINDS })
-  kind: MediaKind;
+  kind!: MediaKind;
 
   @ApiProperty()
-  mimetype: string;
+  mimetype!: string;
 
   @ApiProperty()
-  filename: string;
+  filename!: string;
 
   @ApiProperty()
-  size: number;
+  size!: number;
 }
 
 export class GroupLeaveRuleResponseDto {
   @ApiProperty()
-  id: string;
+  id!: string;
 
   @ApiProperty()
-  sessionId: string;
+  sessionId!: string;
 
   @ApiProperty({ enum: GROUP_EVENTS })
-  event: GroupEvent;
+  event!: GroupEvent;
 
   @ApiProperty()
-  groupId: string;
+  groupId!: string;
 
   @ApiPropertyOptional()
   groupName?: string | null;
@@ -261,20 +289,20 @@ export class GroupLeaveRuleResponseDto {
   audioFilename?: string | null;
 
   @ApiProperty()
-  sendAsVoice: boolean;
+  sendAsVoice!: boolean;
 
   @ApiProperty()
-  delaySeconds: number;
+  delaySeconds!: number;
 
   @ApiProperty()
-  enabled: boolean;
+  enabled!: boolean;
 
   @ApiPropertyOptional()
   lastTriggeredAt?: Date | null;
 
   @ApiProperty()
-  createdAt: Date;
+  createdAt!: Date;
 
   @ApiProperty()
-  updatedAt: Date;
+  updatedAt!: Date;
 }
