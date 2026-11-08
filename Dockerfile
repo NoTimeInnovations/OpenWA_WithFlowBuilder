@@ -62,9 +62,13 @@ WORKDIR /app
 
 # Copy package files
 COPY package*.json ./
+COPY scripts/patch-wwebjs-media-id.js ./scripts/
 
-# Install production dependencies only
-RUN npm ci --omit=dev --legacy-peer-deps && npm cache clean --force
+# Install production dependencies only, then patch whatsapp-web.js so media
+# sends work on current WhatsApp Web (see the script)
+RUN npm ci --omit=dev --legacy-peer-deps \
+    && node scripts/patch-wwebjs-media-id.js \
+    && npm cache clean --force
 
 # Copy built application from builder stage
 COPY --from=builder /app/dist ./dist
