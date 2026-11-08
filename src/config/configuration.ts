@@ -53,6 +53,11 @@ export default () => ({
       args: (process.env.PUPPETEER_ARGS || '--no-sandbox,--disable-setuid-sandbox').split(','),
     },
     sessionDataPath: process.env.SESSION_DATA_PATH || './data/sessions',
+    // Baileys engine (used when ENGINE_TYPE=baileys). Multi-file auth state base dir; each session
+    // gets its own subdirectory. Read by the Baileys plugin from the engine config blob.
+    baileys: {
+      authDir: process.env.BAILEYS_AUTH_DIR || './data/baileys',
+    },
   },
 
   // Webhook configuration

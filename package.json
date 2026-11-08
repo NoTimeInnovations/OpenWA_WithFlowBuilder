@@ -49,6 +49,7 @@
     "@nestjs/swagger": "^11.4.3",
     "@nestjs/throttler": "^6.5.0",
     "@nestjs/typeorm": "^11.0.0",
+    "@whiskeysockets/baileys": "6.7.23",
     "archiver": "^8.0.0",
     "bullmq": "^5.76.10",
     "class-transformer": "^0.5.1",
@@ -108,7 +109,20 @@
     "rootDir": "src",
     "testRegex": ".*\\.spec\\.ts$",
     "transform": {
-      "^.+\\.(t|j)s$": "ts-jest"
+      "^.+\\.(t|j)s$": [
+        "ts-jest",
+        {
+          "tsconfig": {
+            "module": "CommonJS",
+            "moduleResolution": "node",
+            "resolvePackageJsonExports": false
+          }
+        }
+      ]
+    },
+    "moduleNameMapper": {
+      "^@whiskeysockets/baileys$": "<rootDir>/../test/__mocks__/@whiskeysockets/baileys.ts",
+      "^@whiskeysockets/baileys/(.*)$": "<rootDir>/../test/__mocks__/@whiskeysockets/baileys.ts"
     },
     "collectCoverageFrom": [
       "**/*.(t|j)s"

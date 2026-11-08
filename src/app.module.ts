@@ -79,6 +79,8 @@ if (process.env.QUEUE_ENABLED === 'true') {
             __dirname + '/modules/flow/**/*.entity{.ts,.js}',
             __dirname + '/modules/group-leave/**/*.entity{.ts,.js}',
             __dirname + '/modules/campaign/**/*.entity{.ts,.js}',
+            // Baileys engine: message store + lid->phone mapping tables.
+            __dirname + '/engine/**/*.entity{.ts,.js}',
           ],
           migrations: [__dirname + '/database/migrations/*{.ts,.js}'],
           logging: configService.get<boolean>('dataDatabase.logging', false),

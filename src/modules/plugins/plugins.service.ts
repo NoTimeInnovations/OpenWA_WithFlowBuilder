@@ -18,7 +18,7 @@ export class PluginsService {
       author: plugin.manifest.author,
       status: plugin.status,
       config: plugin.config,
-      builtIn: plugin.manifest.id === 'whatsapp-web.js', // Built-in engines
+      builtIn: ['whatsapp-web.js', 'baileys'].includes(plugin.manifest.id), // Built-in engines
       provides: plugin.manifest.provides ?? [],
       configSchema: plugin.manifest.configSchema,
       loadedAt: plugin.loadedAt?.toISOString(),
@@ -43,7 +43,7 @@ export class PluginsService {
       author: plugin.manifest.author,
       status: plugin.status,
       config: plugin.config,
-      builtIn: plugin.manifest.id === 'whatsapp-web.js',
+      builtIn: ['whatsapp-web.js', 'baileys'].includes(plugin.manifest.id),
       provides: plugin.manifest.provides ?? [],
       configSchema: plugin.manifest.configSchema,
       loadedAt: plugin.loadedAt?.toISOString(),
