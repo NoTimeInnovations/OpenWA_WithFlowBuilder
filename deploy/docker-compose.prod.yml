@@ -21,10 +21,15 @@ services:
     # Give the engine time to close Chromium cleanly on redeploy so it removes
     # its own profile lock (avoids "profile in use" on the next launch).
     stop_grace_period: 30s
+    depends_on:
+      redis:
+        condition: service_healthy
     env_file:
       - .env.prod
     environment:
       - PORT=2785
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
       - SESSION_DATA_PATH=/app/data/sessions
       - STORAGE_LOCAL_PATH=/app/data/media
       - PLUGINS_DIR=/app/data/plugins
@@ -39,6 +44,19 @@ services:
       timeout: 10s
       retries: 5
       start_period: 40s
+
+  redis:
+    image: redis:7-alpine
+    container_name: openwa-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   dashboard:
     build:
@@ -69,5 +87,6 @@ services:
 
 volumes:
   openwa-data:
+  redis-data:
   caddy-data:
   caddy-config:

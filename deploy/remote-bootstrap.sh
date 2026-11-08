@@ -43,7 +43,8 @@ ENGINE_TYPE=whatsapp-web.js
 PUPPETEER_HEADLESS=true
 PUPPETEER_ARGS=--no-sandbox,--disable-setuid-sandbox,--disable-dev-shm-usage,--disable-gpu
 STORAGE_TYPE=local
-REDIS_ENABLED=false
+REDIS_ENABLED=true
+CACHE_ENABLED=true
 QUEUE_ENABLED=false
 CORS_ORIGINS=https://${DOMAIN}
 ENV
